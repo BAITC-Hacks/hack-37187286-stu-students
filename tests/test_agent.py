@@ -145,7 +145,8 @@ def test_tool_call_limit_prevents_unbounded_loop():
     assert len(provider.requests) == agent.MAX_ROUNDS
 
 
-def test_chat_completions_transport_sends_tools_not_raw_rules(monkeypatch):
+@pytest.mark.parametrize('model', ['test-model', 'gpt-4.1', 'gpt-5.6', 'gpt-5.6-sol'])
+def test_chat_completions_transport_sends_tools_not_raw_rules(monkeypatch, model):
     received = []
 
     def handle(request):
@@ -155,11 +156,32 @@ def test_chat_completions_transport_sends_tools_not_raw_rules(monkeypatch):
 
     original = httpx.AsyncClient
     monkeypatch.setattr(agent.httpx, "AsyncClient", lambda **kwargs: original(transport=httpx.MockTransport(handle), **kwargs))
-    provider = ChatCompletionsProvider("test-key-not-a-secret", "test-model", "https://provider.test/v1")
+    provider = ChatCompletionsProvider("test-key-not-a-secret", model, "https://provider.test/v1")
     result = asyncio.run(provider.complete([{"role": "user", "content": "Тест"}], "required"))
     assert result["role"] == "assistant"
     assert {item["function"]["name"] for item in received[0]["tools"]} == set(agent._ARGUMENT_MODELS)
     assert received[0]["response_format"] == {"type": "json_object"}
+    if model.startswith('gpt-5.6'):
+        assert received[0]['reasoning_effort'] == 'none'
+    else:
+        assert 'reasoning_effort' not in received[0]
+
+
+@pytest.mark.parametrize('status,flag', [(400, 'bad_request'), (401, 'unauthorized'), (403, 'forbidden'),
+                                       (404, 'not_found'), (429, 'rate_or_quota_limited'), (500, 'server_error')])
+def test_provider_error_logs_only_safe_flags(monkeypatch, caplog, status, flag):
+    def handle(request):
+        return httpx.Response(status, json={'error': {'message': 'private-provider-body'}})
+
+    original = httpx.AsyncClient
+    monkeypatch.setattr(agent.httpx, 'AsyncClient', lambda **kwargs: original(transport=httpx.MockTransport(handle), **kwargs))
+    provider = ChatCompletionsProvider('fake-secret-key', 'private-model', 'https://private-provider.test/v1')
+    with pytest.raises(httpx.HTTPStatusError):
+        asyncio.run(provider.complete([{'role': 'user', 'content': 'private-prompt'}], 'required'))
+    assert 'provider_response_received=True provider_http_ok=False' in caplog.text
+    assert f'{flag}=True' in caplog.text
+    for private in ('fake-secret-key', 'private-model', 'private-provider', 'private-prompt'):
+        assert private not in caplog.text
 
 
 @pytest.mark.parametrize("message", [None, [], "text", {"content": {}}, {"tool_calls": [None]}])

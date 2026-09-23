@@ -51,6 +51,37 @@ Supervisor выполняет ограниченный цикл выбора too
 
 Документация использованного протокола: [function calling](https://developers.openai.com/api/docs/guides/function-calling), [Chat Completions](https://developers.openai.com/api/reference/resources/chat), [JSON output](https://developers.openai.com/api/docs/guides/structured-outputs).
 
+### Если `ai_configured: false`
+
+Для семейства `gpt-5.6` клиент автоматически передаёт `reasoning_effort: "none"`: это позволяет использовать function tools через текущий Chat Completions API. Для остальных моделей этот параметр не добавляется. Ограничение описано в [официальной документации OpenAI](https://developers.openai.com/api/docs/guides/migrate-to-responses).
+
+`backend/main.py` загружает только корневой `.env` при импорте: путь вычисляется от самого файла, а не от рабочей директории терминала. `ai/agent.py` проверяет непустые `LLM_API_KEY` и `LLM_MODEL`; `LLM_BASE_URL` используется для запроса, но не участвует в этом флаге. Имена совпадают с `.env.example`.
+
+После создания или изменения `.env` остановите прежний backend через Ctrl+C и запустите его снова. Не полагайтесь на `--reload` для отслеживания `.env`. Убедитесь, что порт обслуживает нужный процесс:
+
+```powershell
+Get-NetTCPConnection -LocalPort 8000 -State Listen | Select-Object OwningProcess
+Invoke-RestMethod http://127.0.0.1:8000/api/health
+```
+
+Ожидается `{"status":"ok","ai_configured":true}`. `load_dotenv(..., override=False)` сохраняет переменные процесса, в том числе пустые: если `LLM_API_KEY` или `LLM_MODEL` уже заданы в окружении, исправьте их либо удалите из окружения запуска перед перезапуском. Файл автоматически их не заменяет.
+
+`ai_configured: true` подтверждает наличие настроек, но не доступность провайдера или совместимость модели. Для проверки настоящего вызова:
+
+```powershell
+$body = @{message='Inspect the initial city state using inspect_city_state and explain its main problems.'} | ConvertTo-Json
+$reply = Invoke-RestMethod http://127.0.0.1:8000/api/chat -Method Post -ContentType 'application/json' -Body $body -TimeoutSec 180
+$reply | Select-Object available,summary,evidence
+```
+
+`available: true` означает, что ответ LLM прошёл проверку приложения. При HTTP-отказе в консоли backend появятся только boolean-флаги: `provider_response_received=True provider_http_ok=False` и категория отказа (`bad_request`, `unauthorized`, `forbidden`, `not_found`, `rate_or_quota_limited`, `server_error`). Это подтверждает получение HTTP-ответа провайдера; ключ, URL и тело ошибки не логируются. `bad_request=True` требует проверки совместимости модели с Chat Completions, function calling и JSON output. `available: false` само по себе не позволяет отличить ошибку сети от отклонённого ответа модели.
+
+Тесты конфигурации используют фиктивный `.env` и изолированное окружение, без реального ключа и сетевых запросов:
+
+```powershell
+.venv/Scripts/python.exe -m pytest tests/test_llm_config.py tests/test_agent.py -q
+```
+
 ## Архитектура и зоны ответственности
 
 ```text
