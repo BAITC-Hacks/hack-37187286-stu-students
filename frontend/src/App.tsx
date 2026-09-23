@@ -3,13 +3,17 @@ import {
   ArrowUpRight,
   BarChart3,
   Building2,
+  Check,
+  ChevronDown,
   ChevronRight,
   Flame,
   LayoutDashboard,
   MapPin,
   Menu,
+  PanelLeft,
   PanelLeftClose,
   Presentation,
+  RotateCcw,
   SlidersHorizontal,
   Sparkles,
   Trophy,
@@ -40,6 +44,11 @@ const navigation = [
 export default function App() {
   const [page, setPage] = useState<Page>('overview')
   const [menu, setMenu] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [profileOpen, setProfileOpen] = useState(false)
+  const [quickNavOpen, setQuickNavOpen] = useState(false)
+  const profileRef = useRef<HTMLDivElement>(null)
+  const quickNavRef = useRef<HTMLDivElement>(null)
   const [context, setContext] = useState<CityContext | null>(null)
   const [contextError, setContextError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -126,8 +135,38 @@ export default function App() {
   function go(next: Page) {
     setPage(next)
     setMenu(false)
+    setQuickNavOpen(false)
+    setProfileOpen(false)
     window.scrollTo({ top: 0, behavior: 'instant' })
   }
+
+  // Outside click and Escape key listener for profile and quick switcher
+  useEffect(() => {
+    function handleOutside(e: MouseEvent | TouchEvent) {
+      if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
+        setProfileOpen(false)
+      }
+      if (quickNavRef.current && !quickNavRef.current.contains(e.target as Node)) {
+        setQuickNavOpen(false)
+      }
+    }
+    function handleKeydown(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        setProfileOpen(false)
+        setQuickNavOpen(false)
+      }
+    }
+    if (profileOpen || quickNavOpen) {
+      document.addEventListener('mousedown', handleOutside)
+      document.addEventListener('touchstart', handleOutside)
+      document.addEventListener('keydown', handleKeydown)
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleOutside)
+      document.removeEventListener('touchstart', handleOutside)
+      document.removeEventListener('keydown', handleKeydown)
+    }
+  }, [profileOpen, quickNavOpen])
 
   const setDecisions = useCallback((next: Decision[]) => {
     runController.current?.abort()
@@ -180,6 +219,19 @@ export default function App() {
     }
   }
 
+  const loadDemo = () => {
+    demo()
+    setProfileOpen(false)
+  }
+
+  const resetPlan = () => {
+    setDecisions([])
+    setResult(null)
+    setAnalysis(null)
+    setProfileOpen(false)
+    go('builder')
+  }
+
   const apply = (scenario: Simulation) => {
     setDecisions(scenario.decisions.map(d => ({ ...d })))
     acceptResult(scenario)
@@ -195,11 +247,11 @@ export default function App() {
   }
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
       <a href="#main-content" className="skip-link">Перейти к содержимому</a>
       {menu && <button className="menu-overlay" aria-label="Закрыть меню" onClick={() => setMenu(false)} />}
 
-      <aside className={`sidebar ${menu ? 'open' : ''}`}>
+      <aside className={`sidebar ${menu ? 'open' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`}>
         <a className="brand" href="#" onClick={e => { e.preventDefault(); go('overview') }}>
           <span className="brand-symbol">
             <Building2 size={26} strokeWidth={1.8} />
@@ -209,7 +261,14 @@ export default function App() {
           </span>
         </a>
 
-        <button className="icon-button sidebar-close" onClick={() => setMenu(false)} aria-label="Скрыть навигацию">
+        <button
+          className="icon-button sidebar-close"
+          onClick={() => {
+            if (window.innerWidth <= 1000) setMenu(false)
+            else setSidebarCollapsed(true)
+          }}
+          aria-label="Скрыть навигацию"
+        >
           <X size={19} />
         </button>
 
@@ -256,53 +315,296 @@ export default function App() {
             <span className="hack-year">AI CHALLENGE 2026</span>
           </div>
 
-          <div className="sidebar-version">
+          <button
+            type="button"
+            className="sidebar-version sidebar-collapse-trigger"
+            onClick={() => setSidebarCollapsed(true)}
+            title="Свернуть боковую панель для полноэкранного режима"
+          >
             <span className={`connection-dot ${context ? '' : 'offline'}`} />
             {context ? 'Модель подключена' : 'Подключение к модели'}
             <PanelLeftClose size={13} />
-          </div>
+          </button>
         </div>
       </aside>
 
-      <div className="app-main">
+      <div className={`app-main ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
         <header className="topbar">
           <div className="breadcrumbs">
-            <button className="icon-button mobile-menu" aria-label="Открыть меню" onClick={() => setMenu(true)}>
-              <Menu size={21} />
+            {/* Toggle sidebar button (desktop collapse / mobile open) */}
+            <button
+              type="button"
+              className="icon-button topbar-menu-toggle"
+              aria-label={sidebarCollapsed ? 'Развернуть меню' : 'Переключить панель'}
+              onClick={() => {
+                if (window.innerWidth <= 1000) {
+                  setMenu(v => !v)
+                } else {
+                  setSidebarCollapsed(v => !v)
+                }
+              }}
+              title={sidebarCollapsed ? 'Развернуть панель' : 'Свернуть панель'}
+            >
+              {sidebarCollapsed ? <PanelLeft size={18} /> : <Menu size={18} />}
             </button>
-            <span className="breadcrumb-root">Ситуационный центр</span>
-            <ChevronRight size={14} />
-            <strong>{navigation.find(n => n.id === page)?.label}</strong>
+
+            {/* Breadcrumb root: interactive button */}
+            <button
+              type="button"
+              className="breadcrumb-btn breadcrumb-root"
+              onClick={() => go('overview')}
+              title="Перейти в Ситуационный центр (Обзор города)"
+            >
+              Ситуационный центр
+            </button>
+
+            <ChevronRight size={13} className="breadcrumb-separator" />
+
+            {/* Quick page switcher dropdown */}
+            <div className="breadcrumb-nav-wrapper" ref={quickNavRef}>
+              <button
+                type="button"
+                className="breadcrumb-current-btn"
+                onClick={() => setQuickNavOpen(v => !v)}
+                aria-expanded={quickNavOpen}
+                title="Нажмите для быстрого перехода к другому разделу"
+              >
+                <strong>{navigation.find(n => n.id === page)?.label}</strong>
+                <ChevronDown size={13} className={`breadcrumb-arrow ${quickNavOpen ? 'open' : ''}`} />
+              </button>
+
+              {quickNavOpen && (
+                <div className="breadcrumb-dropdown" role="menu">
+                  <div className="dropdown-label">РАЗДЕЛЫ СИСТЕМЫ</div>
+                  {navigation.map(item => {
+                    const Icon = item.icon
+                    const isCurrent = item.id === page
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        className={`breadcrumb-dropdown-item ${isCurrent ? 'active' : ''}`}
+                        onClick={() => {
+                          go(item.id)
+                          setQuickNavOpen(false)
+                        }}
+                      >
+                        <Icon size={14} />
+                        <span>{item.label}</span>
+                        {isCurrent && <Check size={13} className="item-check" />}
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Quick status in topbar */}
           <div className="topbar-right">
             {context && (
               <div className="topbar-status-bar">
-                <div className="topbar-balance-dots" title="Покрытие 5 направлений">
+                {/* 5 Domains Coverage button */}
+                <button
+                  type="button"
+                  className="topbar-balance-dots"
+                  onClick={() => go('builder')}
+                  title="Покрытие 5 направлений: кликните для настройки в Конструкторе"
+                  aria-label="Покрытие 5 направлений"
+                >
                   {CITY_DOMAINS.map(d => {
                     const cnt = directionCounts[d.name] || 0
                     return (
                       <span
                         key={d.id}
-                        className={`domain-mini-dot ${cnt > 0 ? 'filled' : 'empty'}`}
+                        className={`domain-mini-dot ${cnt > 0 ? 'dot-filled' : 'dot-empty'}`}
                         style={{ backgroundColor: cnt > 0 ? d.color : undefined }}
                         title={`${d.name}: ${cnt}/2`}
                       />
                     )
                   })}
-                </div>
-                <div className="topbar-budget-pill">
+                </button>
+
+                {/* Budget Pill Button */}
+                <button
+                  type="button"
+                  className="topbar-budget-pill"
+                  onClick={() => go('builder')}
+                  title="Бюджет решений: кликните для перехода в Конструктор решений"
+                  aria-label={`Использовано ${validation?.budget.used ?? 0} из 100 единиц бюджета`}
+                >
                   <Wallet size={13} />
                   <span>{validation?.budget.used ?? 0}/100 ед.</span>
-                </div>
+                </button>
               </div>
             )}
-            <span className="model-label">
-              <span /> СИМУЛЯЦИЯ
-            </span>
-            <div className="user-avatar" title="Аким / Главный стратег">
-              АКИМ
+
+            {/* Simulation mode indicator button */}
+            <button
+              type="button"
+              className="model-label-btn"
+              onClick={() => go('advisor')}
+              title="Цифровая модель города активна (Digital Twin v3.11). Кликните для перехода к AI-советнику"
+              aria-label="Статус симуляции: активна"
+            >
+              <span className="pulse-dot" />
+              <span>СИМУЛЯЦИЯ</span>
+            </button>
+
+            {/* Profile Avatar & Dropdown */}
+            <div className="profile-wrapper" ref={profileRef}>
+              <button
+                type="button"
+                className={`user-avatar-btn ${profileOpen ? 'active' : ''}`}
+                onClick={() => setProfileOpen(v => !v)}
+                aria-expanded={profileOpen}
+                aria-haspopup="true"
+                title="Профиль стратега и быстрые действия"
+                aria-label="Открыть профиль стратега"
+              >
+                <span className="user-avatar-badge">АК</span>
+                <span className="user-avatar-online" />
+              </button>
+
+              {profileOpen && (
+                <div className="profile-dropdown" role="menu">
+                  <div className="profile-header">
+                    <div className="profile-avatar-large">
+                      <span>АК</span>
+                    </div>
+                    <div className="profile-user-info">
+                      <div className="profile-name">Аким г. Астана</div>
+                      <div className="profile-role">Главный стратег · Штаб ситуационного центра</div>
+                      <div className="profile-status">
+                        <span className="status-indicator online" />
+                        Цифровой двойник подключен (v3.11)
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="profile-metrics">
+                    <div className="profile-metric-card">
+                      <div className="metric-label">Бюджет</div>
+                      <div className="metric-value">
+                        <Wallet size={12} />
+                        <strong>{validation?.budget.used ?? 0}</strong>
+                        <span>/100 ед.</span>
+                      </div>
+                      <div className="profile-mini-bar">
+                        <div
+                          className="profile-mini-progress"
+                          style={{
+                            width: `${Math.min(100, validation?.budget.used ?? 0)}%`,
+                            backgroundColor: (validation?.budget.used ?? 0) > 100 ? '#ef4444' : '#10b981'
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="profile-metric-card">
+                      <div className="metric-label">AQLS Индекс</div>
+                      <div className="metric-value text-emerald">
+                        <strong>
+                          {result?.score?.after
+                            ? result.score.after.toFixed(1)
+                            : (context?.baseline.score.toFixed(1) ?? '52.6')}
+                        </strong>
+                        <span>/100</span>
+                      </div>
+                      <div className="metric-sub">
+                        {result?.score ? 'После симуляции' : 'Базовый уровень'}
+                      </div>
+                    </div>
+
+                    <div className="profile-metric-card">
+                      <div className="metric-label">Меры & Баланс</div>
+                      <div className="metric-value">
+                        <strong>{decisions.length}</strong>
+                        <span>/10 мер</span>
+                      </div>
+                      <div className="metric-sub">
+                        {CITY_DOMAINS.filter(d => (directionCounts[d.name] || 0) > 0).length}/5 направлений
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="profile-actions-title">БЫСТРЫЕ ДЕЙСТВИЯ СТРАТЕГА</div>
+                  <div className="profile-actions">
+                    <button
+                      type="button"
+                      className="profile-action-btn"
+                      onClick={loadDemo}
+                    >
+                      <Sparkles size={15} className="text-emerald" />
+                      <div>
+                        <strong>Загрузить эталонное демо</strong>
+                        <small>Проверенный баланс 5 направлений на 95 ед.</small>
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      className="profile-action-btn"
+                      onClick={resetPlan}
+                    >
+                      <RotateCcw size={15} className="text-amber" />
+                      <div>
+                        <strong>Сбросить план решений</strong>
+                        <small>Очистить корзину мер и собрать заново</small>
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      className="profile-action-btn"
+                      onClick={() => {
+                        go('pitch')
+                        setProfileOpen(false)
+                      }}
+                    >
+                      <Presentation size={15} className="text-purple" />
+                      <div>
+                        <strong>Презентация / Доклад Акиму</strong>
+                        <small>Экспорт стратегии и слайд-шоу для жюри</small>
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      className="profile-action-btn"
+                      onClick={() => {
+                        go('crisis')
+                        setProfileOpen(false)
+                      }}
+                    >
+                      <Flame size={15} className="text-red" />
+                      <div>
+                        <strong>Стресс-тест форс-мажоров</strong>
+                        <small>Мороз -38°C, снегопад, энергокризис</small>
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      className="profile-action-btn"
+                      onClick={() => {
+                        go('leaderboard')
+                        setProfileOpen(false)
+                      }}
+                    >
+                      <Trophy size={15} className="text-cyan" />
+                      <div>
+                        <strong>Рейтинг команд</strong>
+                        <small>Сравнить сценарий с бенчмарками</small>
+                      </div>
+                    </button>
+                  </div>
+
+                  <div className="profile-footer">
+                    <span>OSM MBTiles GIS · FastAPI backend · Астана</span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </header>

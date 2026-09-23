@@ -59,13 +59,13 @@ LLM_BASE_URL=https://api.openai.com/v1
 Запустить backend:
 
 ```powershell
-uvicorn backend.main:app --reload --host 127.0.0.1 --port 8001
+uvicorn backend.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
 Проверка backend:
 
 ```text
-http://127.0.0.1:8001/api/health
+http://127.0.0.1:8000/api/health
 ```
 
 Должно быть примерно:
@@ -77,11 +77,12 @@ http://127.0.0.1:8001/api/health
 }
 ```
 
-Если `8001` занят, использовать другой:
+Если порт `8000` занят, можно запустить на `8001`:
 
 ```powershell
-uvicorn backend.main:app --reload --host 127.0.0.1 --port 8010
+uvicorn backend.main:app --reload --host 127.0.0.1 --port 8001
 ```
+(а во frontend перед запуском задать `$env:BACKEND_PORT="8001"`)
 
 ---
 
@@ -103,7 +104,7 @@ http://127.0.0.1:5173
 
 Открываете его в браузере.
 
-Если frontend не видит backend, тогда надо проверить, на какой порт настроен API/proxy. Если backend у вас на `8001`, а frontend ожидает `8000`, это нужно синхронизировать.
+Если frontend не видит backend, проверьте порт API/proxy: по умолчанию оба настроены на порт `8000`. Если запускаете backend на другом порту, задайте `$env:BACKEND_PORT="8001"` перед `npm run dev`.
 
 ---
 
@@ -115,12 +116,10 @@ http://127.0.0.1:5173
 pytest
 ```
 
-Или отдельно:
+Или воспроизводимый демо-сценарий (без LLM API):
 
 ```powershell
-pytest tests/test_simulator.py -v
-pytest tests/test_api.py -v
-pytest tests/test_agent.py -v
+python -m scripts.demo
 ```
 
 Минимальный ручной тест:
@@ -169,7 +168,7 @@ LLM_BASE_URL=https://api.openai.com/v1
 Проверить:
 
 ```text
-http://127.0.0.1:8001/api/health
+http://127.0.0.1:8000/api/health
 ```
 
 Теперь должно быть:
@@ -190,7 +189,7 @@ http://127.0.0.1:8001/api/health
 4. .\venv\Scripts\Activate.ps1
 5. pip install -r requirements.txt
 6. Copy-Item .env.example .env
-7. uvicorn backend.main:app --reload --host 127.0.0.1 --port 8001
+7. uvicorn backend.main:app --reload --host 127.0.0.1 --port 8000
 
 Во втором терминале:
 8. cd frontend
@@ -198,5 +197,5 @@ http://127.0.0.1:8001/api/health
 10. npm run dev
 
 Проверка:
-http://127.0.0.1:8001/api/health
+http://127.0.0.1:8000/api/health
 и frontend на адресе, который покажет Vite.

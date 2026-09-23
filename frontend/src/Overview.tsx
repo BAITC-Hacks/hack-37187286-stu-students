@@ -155,6 +155,7 @@ export default function Overview({
       minZoom: 9,
       maxZoom: 14.5,
       attributionControl: false,
+      maxCanvasSize: [4096, 4096],
     })
 
     requestAnimationFrame(() => {
