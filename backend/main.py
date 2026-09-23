@@ -64,7 +64,7 @@ async def analyze(result: SimulationResult):
     answer = await run_supervisor(ChatRequest(
         message="Объясни результат текущего сценария: почему изменился Score, сильные стороны, оставшиеся слабые места, риски и компромиссы.",
         decisions=trusted.decisions,
-    ))
+    ), analysis_result=trusted)
     explanation = "\n\n".join([answer.summary, *answer.calculated_results, *answer.interpretation,
                                 *answer.strengths, *answer.risks, *answer.tradeoffs, *answer.recommendations]) if answer.available else None
     return AnalysisResponse(available=answer.available, explanation=explanation, message=answer.message, analysis=answer)

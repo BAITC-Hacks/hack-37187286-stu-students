@@ -37,7 +37,7 @@ export interface Simulation {
   summary: string[]
 }
 export type Objective = 'max_score' | 'balanced' | 'focus_district' | 'budget_efficiency'
-export interface SearchResult { results: Simulation[]; search?: { exhaustive: boolean; valid_candidates: number }; ranking?: string[]; objective?: string; message?: string }
+export interface SearchResult { valid?: boolean; errors?: (string | { message: string })[]; results?: Simulation[]; search?: { exhaustive: boolean; valid_candidates: number }; ranking?: string[]; objective?: string; message?: string }
 export interface Comparison {
   valid: boolean; errors?: { code: string; message: string }[]
   score: { a: number; b: number; delta: number }
@@ -49,6 +49,7 @@ export interface Comparison {
 export interface AgentResponse {
   available: boolean; summary?: string; message?: string
   strengths?: string[]; risks?: string[]; tradeoffs?: string[]; recommendations?: string[]
+  observations?: string[]; calculated_results?: string[]; interpretation?: string[]
   evidence?: { tool: string; args: Record<string, unknown>; result: unknown }[]
   score?: Change
 }

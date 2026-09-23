@@ -160,3 +160,30 @@ def test_chat_completions_transport_sends_tools_not_raw_rules(monkeypatch):
     assert result["role"] == "assistant"
     assert {item["function"]["name"] for item in received[0]["tools"]} == set(agent._ARGUMENT_MODELS)
     assert received[0]["response_format"] == {"type": "json_object"}
+
+
+@pytest.mark.parametrize("message", [None, [], "text", {"content": {}}, {"tool_calls": [None]}])
+def test_malformed_provider_messages_are_unavailable_not_exceptions(message):
+    response = asyncio.run(run_supervisor(ChatRequest(message="Объясни"), ScriptedProvider([message])))
+    assert not response.available
+
+
+def test_analysis_is_locked_to_the_trusted_scenario():
+    result = simulate(DEMO_PLAN)
+    other = [dict(item) for item in DEMO_PLAN]
+    next(item for item in other if item["measure_id"] == "M8")["district"] = "Есиль"
+    provider = ScriptedProvider([tool_call("simulate_scenario", {"decisions": other})])
+    response = asyncio.run(run_supervisor(ChatRequest(message="Объясни", decisions=DEMO_PLAN), provider, analysis_result=result))
+    assert not response.available
+    assert response.score == result.score
+    assert len(response.evidence) == 1
+    assert provider.requests[0][1] == "none"
+
+
+def test_analysis_can_explain_seeded_canonical_evidence():
+    result = simulate(DEMO_PLAN)
+    provider = ScriptedProvider([final("Итоговый Score: {{e1.score.after}}.")])
+    response = asyncio.run(run_supervisor(ChatRequest(message="Объясни", decisions=DEMO_PLAN), provider, analysis_result=result))
+    assert response.available
+    assert response.score == result.score
+    assert response.evidence[0].result == result.model_dump(mode="json")

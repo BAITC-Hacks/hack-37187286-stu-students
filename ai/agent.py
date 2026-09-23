@@ -13,7 +13,7 @@ from ai.grounding import GroundingError, render_grounded
 from backend.agent_schemas import (
     AgentDraft, ChatRequest, ChatResponse, CompareRequest, SearchRequest, ToolEvidence,
 )
-from backend.schemas import Change, Plan, StrictModel
+from backend.schemas import Change, Plan, SimulationResult, StrictModel
 
 MAX_ROUNDS = 6
 MAX_TOOL_CALLS = 8
@@ -113,8 +113,19 @@ def _unavailable(message: str, evidence: list[ToolEvidence]) -> ChatResponse:
                         score=_score_from_evidence(evidence))
 
 
-async def run_supervisor(request: ChatRequest, provider: CompletionProvider | None = None) -> ChatResponse:
-    evidence: list[ToolEvidence] = []
+async def run_supervisor(
+    request: ChatRequest,
+    provider: CompletionProvider | None = None,
+    *,
+    analysis_result: SimulationResult | None = None,
+) -> ChatResponse:
+    # /analyze already ran the canonical engine. Lock this explanation to that
+    # exact result; free tool selection remains available in advisor chat.
+    evidence: list[ToolEvidence] = [] if analysis_result is None else [ToolEvidence(
+        id="e1", tool="simulate_scenario",
+        args={"decisions": [decision.model_dump() for decision in analysis_result.decisions]},
+        result=analysis_result.model_dump(mode="json"),
+    )]
     if provider is None:
         if not is_configured():
             return _unavailable("AI-советник не подключён. Вы можете рассчитать план, сравнить сценарии и выполнить поиск по цели без AI.", evidence)
@@ -129,19 +140,37 @@ async def run_supervisor(request: ChatRequest, provider: CompletionProvider | No
                "current_decisions": [d.model_dump() for d in request.decisions] if request.decisions is not None else None,
                "previous_decisions": [d.model_dump() for d in request.previous_decisions] if request.previous_decisions is not None else None}
     messages.append({"role": "user", "content": json.dumps(context, ensure_ascii=False)})
+    if analysis_result is not None:
+        item = evidence[0]
+        messages.append({"role": "system", "content": "План уже рассчитан сервером. Объясни только результат следующего инструмента. Не выбирай и не анализируй другой план. Верни финальный JSON со ссылками на e1."})
+        messages.append({"role": "assistant", "content": None, "tool_calls": [{
+            "id": "validated_plan", "type": "function",
+            "function": {"name": item.tool, "arguments": json.dumps(item.args, ensure_ascii=False)},
+        }]})
+        messages.append({"role": "tool", "tool_call_id": "validated_plan", "content": json.dumps(
+            {"evidence_id": item.id, "result": _compact(item.result)}, ensure_ascii=False, allow_nan=False,
+        )})
     repaired = False
     try:
         async with asyncio.timeout(75):
             for round_index in range(MAX_ROUNDS):
-                choice = "required" if not evidence else ("none" if round_index == MAX_ROUNDS-1 else "auto")
+                choice = "none" if analysis_result is not None else ("required" if not evidence else ("none" if round_index == MAX_ROUNDS-1 else "auto"))
                 message = await provider.complete(messages, choice)
+                if not isinstance(message, dict) or not isinstance(message.get("content"), (str, type(None))):
+                    raise ValueError("Malformed provider message")
                 calls = message.get("tool_calls") or []
                 if calls:
+                    if analysis_result is not None:
+                        return _unavailable("AI попытался изменить план при объяснении. Исходные расчёты сохранены; повторите запрос анализа.", evidence)
                     if not isinstance(calls, list) or len(evidence)+len(calls) > MAX_TOOL_CALLS:
                         return _unavailable("Достигнут лимит действий AI. Уточните одну цель и повторите запрос.", evidence)
                     messages.append({"role": "assistant", "content": message.get("content"), "tool_calls": calls})
                     for call in calls:
+                        if not isinstance(call, dict) or not isinstance(call.get("function"), dict):
+                            raise ValueError("Malformed tool call")
                         name = call["function"]["name"]
+                        if not isinstance(name, str) or not isinstance(call.get("id"), str):
+                            raise ValueError("Malformed tool name or id")
                         try:
                             arguments = json.loads(call["function"]["arguments"])
                             if not isinstance(arguments, dict):
