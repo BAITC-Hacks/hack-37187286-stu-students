@@ -17,6 +17,7 @@ test('manual demo, changed placement, prior comparison and stale-result invalida
   await page.goto('/')
   await expect(page.getByRole('heading', { name: 'Астана. Следующая глава.' })).toBeVisible()
   await expect(page.getByText('Учебная модель HackAlem.', { exact: false })).toBeVisible()
+  await page.evaluate(() => window.scrollTo(0, 0))
   await page.screenshot({ path: 'test-results/overview-desktop.png', fullPage: true })
   await page.getByRole('button', { name: 'Загрузить демо' }).click()
   const calculate = page.getByRole('button', { name: 'Рассчитать стратегию' })
@@ -24,6 +25,7 @@ test('manual demo, changed placement, prior comparison and stale-result invalida
   await calculate.click()
   await expect(page.getByTestId('result-score')).toHaveText(score(demo.score.after))
   await expect(page.getByRole('heading', { name: 'AI-объяснение недоступно' })).toBeVisible()
+  await page.evaluate(() => window.scrollTo(0, 0))
   await page.screenshot({ path: 'test-results/results-desktop.png', fullPage: true })
   await page.getByRole('button', { name: 'Изменить план' }).click()
   await page.getByLabel('Район для M8', { exact: true }).selectOption('Есиль')
@@ -47,6 +49,7 @@ test('over-budget and global incompatibility stay invalid', async ({ page }) => 
   await page.getByLabel('Район для M13', { exact: true }).selectOption('Нура')
   await expect(page.locator('.validation-errors')).toContainText('109')
   await expect(page.getByRole('button', { name: 'Рассчитать стратегию' })).toBeDisabled()
+  await page.evaluate(() => window.scrollTo(0, 0))
   await page.screenshot({ path: 'test-results/invalid-plan.png', fullPage: true })
   await page.getByRole('button', { name: 'Очистить выбор' }).click()
   await page.getByRole('button', { name: 'Добавить M1', exact: true }).click()
@@ -74,6 +77,7 @@ test('advisor unavailable is honest; real optimizer finds and applies a valid pl
   const searchResult = await (await searchResponse).json()
   const best = searchResult.results[0]
   expect(best.budget.used).toBeLessThanOrEqual(90)
+  await page.evaluate(() => window.scrollTo(0, 0))
   await page.screenshot({ path: 'test-results/advisor-desktop.png', fullPage: true })
   await page.getByRole('button', { name: 'Применить сценарий' }).first().click()
   await expect(page.getByTestId('result-score')).toBeVisible()
@@ -105,5 +109,38 @@ test('mobile navigation, keyboard selection and layout', async ({ page }) => {
   await page.keyboard.press('Enter')
   await expect(page.getByTestId('result-score')).toBeVisible()
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBeTruthy()
+  await page.evaluate(() => window.scrollTo(0, 0))
   await page.screenshot({ path: 'test-results/results-mobile.png', fullPage: true })
+})
+
+test('structured AI response shows evidence and applies the calculated scenario', async ({ page, request }) => {
+  const errors: string[] = []
+  page.on('pageerror', e => errors.push(e.message))
+  const context = await (await request.get('http://127.0.0.1:8000/api/context')).json()
+  const calculated = await (await request.post('http://127.0.0.1:8000/api/simulate', { data: { decisions: context.demo_plan } })).json()
+  await page.route('**/api/chat', route => route.fulfill({ json: {
+    available: true,
+    summary: 'План проверен. Основной эффект сосредоточен в Нуре.',
+    observations: ['В исходном состоянии Нура требует внимания.'],
+    calculated_results: ['Расчёт выполнен инструментом симуляции.'],
+    interpretation: ['Социальные мероприятия поддерживают слабый район.'],
+    strengths: ['Социальные показатели улучшились.'],
+    risks: ['Транспортные проблемы требуют отдельного решения.'],
+    tradeoffs: ['Бюджет направлен прежде всего на социальную сферу.'],
+    recommendations: ['Сравните этот план с альтернативным размещением.'],
+    score: calculated.score,
+    evidence: [{ id: 'e1', tool: 'simulate_scenario', args: { decisions: context.demo_plan }, result: calculated }],
+  } }))
+  await page.goto('/')
+  await page.getByRole('button', { name: 'AI-советник', exact: true }).click()
+  await page.getByLabel('Ваша цель или вопрос советнику').fill('Объясни сценарий')
+  await page.getByRole('button', { name: 'Отправить советнику' }).click()
+  await expect(page.getByText('План проверен. Основной эффект сосредоточен в Нуре.', { exact: true })).toBeVisible()
+  await expect(page.getByText('В исходном состоянии Нура требует внимания.', { exact: true })).toBeVisible()
+  await expect(page.getByText('Расчёт выполнен инструментом симуляции.', { exact: true })).toBeVisible()
+  await expect(page.getByText('Социальные мероприятия поддерживают слабый район.', { exact: true })).toBeVisible()
+  await expect(page.locator('.evidence-scenarios .scenario-card')).toHaveCount(1)
+  await page.locator('.evidence-scenarios').getByRole('button', { name: 'Применить сценарий' }).click()
+  await expect(page.getByTestId('result-score')).toHaveText(calculated.score.after.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }))
+  expect(errors).toEqual([])
 })
