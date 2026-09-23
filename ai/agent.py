@@ -97,6 +97,64 @@ def execute_tool(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
     return getattr(tools, name)(**args)
 
 
+def _plan_key(decisions: list[dict]) -> str:
+    """Compare plan identity without depending on decision order."""
+    normalized = [{"measure_id": item["measure_id"], "district": item.get("district")} for item in decisions]
+    return json.dumps(sorted(normalized, key=lambda item: (item["measure_id"], item["district"] or "")),
+                      sort_keys=True, ensure_ascii=False)
+
+
+def _search_plans(evidence: list[ToolEvidence]) -> list[list[dict]]:
+    return [result["decisions"] for item in evidence if item.tool == "search_scenarios"
+            for result in item.result.get("results", []) if result.get("valid") is True]
+
+
+def _comparison_error(request: ChatRequest, arguments: dict, evidence: list[ToolEvidence]) -> dict | None:
+    """Check provenance, not user intent. Never substitute a demo/model-written plan."""
+    try:
+        parsed = CompareRequest.model_validate(arguments).model_dump(mode="json")
+    except ValidationError:
+        return None  # The regular typed tool validator supplies the error.
+    if not request.decisions:
+        code, message = "MISSING_CURRENT_PLAN", "Текущий план не передан. Попроси пользователя выбрать сценарий для сравнения."
+    else:
+        current = _plan_key([d.model_dump() for d in request.decisions])
+        alternatives = _search_plans(evidence)
+        if request.previous_decisions:
+            alternatives.append([d.model_dump() for d in request.previous_decisions])
+        known = {_plan_key(plan) for plan in alternatives}
+        a, b = _plan_key(parsed["scenario_a"]), _plan_key(parsed["scenario_b"])
+        if (a == current and b in known) or (b == current and a in known):
+            return None
+        code, message = "UNSOURCED_COMPARISON", (
+            "Сравнивай только текущий план с переданным предыдущим или с decisions из результата поиска. "
+            "Если второго плана нет, попроси пользователя выбрать его; не подставляй демонстрационный план."
+        )
+    return {"valid": False, "errors": [{"code": code, "message": message}]}
+
+
+def _require_search_comparison(request: ChatRequest, evidence: list[ToolEvidence]) -> None:
+    """A search recommendation with a current plan needs calculated comparison first."""
+    candidates = {_plan_key(plan) for plan in _search_plans(evidence)}
+    if not request.decisions or not candidates:
+        return
+    current = _plan_key([d.model_dump() for d in request.decisions])
+    for item in evidence:
+        if item.tool != "compare_scenarios":
+            continue
+        # Failed provenance/argument checks never count as a calculated comparison.
+        if item.result.get("valid") is not True and not isinstance(item.result.get("errors"), dict):
+            continue
+        a, b = _plan_key(item.args["scenario_a"]), _plan_key(item.args["scenario_b"])
+        if (a == current and b in candidates) or (b == current and a in candidates):
+            return
+    raise GroundingError(
+        "До финального ответа вызови compare_scenarios: scenario_a=current_decisions, "
+        "scenario_b=decisions выбранного результата search_scenarios. "
+        "Сам поиск не доказывает улучшение текущего плана."
+    )
+
+
 def _compact(value: Any) -> Any:
     """Drop redundant full indicator matrices from the LLM context, not API evidence.
 
@@ -196,7 +254,8 @@ async def run_supervisor(
                             result = {"valid": False, "errors": [{"code": "INVALID_TOOL_JSON", "message": "Аргументы инструмента должны быть JSON-объектом."}]}
                         else:
                             # Search is CPU work. Keep the event loop responsive for other requests.
-                            result = await asyncio.to_thread(execute_tool, name, arguments)
+                            error = _comparison_error(request, arguments, evidence) if name == "compare_scenarios" else None
+                            result = error if error is not None else await asyncio.to_thread(execute_tool, name, arguments)
                         item = ToolEvidence(id=f"e{len(evidence)+1}", tool=name, args=arguments, result=result)
                         evidence.append(item)
                         messages.append({"role": "tool", "tool_call_id": call["id"], "content": json.dumps(
@@ -208,6 +267,7 @@ async def run_supervisor(
                     if not evidence:
                         raise GroundingError("Сначала получи факты через tools.")
                     draft = AgentDraft.model_validate_json(message.get("content") or "")
+                    _require_search_comparison(request, evidence)
                     answer = render_grounded(draft, evidence)
                     return ChatResponse(available=True, **answer.model_dump(), evidence=evidence,
                                         score=_score_from_evidence(evidence))
@@ -216,7 +276,7 @@ async def run_supervisor(
                         return _unavailable("AI-ответ не прошёл проверку ссылок на расчёты. Проверенные результаты доступны ниже; попробуйте повторить запрос.", evidence)
                     repaired = True
                     messages.append({"role": "assistant", "content": message.get("content") or ""})
-                    messages.append({"role": "system", "content": "Исправь формат JSON и ссылки на числовые данные. " + (str(error) if isinstance(error, GroundingError) else "Используй только поля заданной схемы ответа.")})
+                    messages.append({"role": "system", "content": "Исправь ответ; при необходимости сначала вызови tools. " + (str(error) if isinstance(error, GroundingError) else "Используй только поля заданной схемы ответа.")})
     except (httpx.HTTPError, TimeoutError, ValueError, KeyError, IndexError, TypeError):
         return _unavailable("AI-объяснение временно недоступно. Проверенные результаты сохранены. Повторите запрос позже.", evidence)
     return _unavailable("Достигнут лимит шагов AI. Проверенные результаты доступны; уточните запрос.", evidence)

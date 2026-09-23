@@ -29,7 +29,175 @@ class ScriptedProvider:
 
     async def complete(self, messages, tool_choice):
         self.requests.append((json.loads(json.dumps(messages)), tool_choice))
-        return next(self.replies)
+        reply = next(self.replies)
+        return reply(messages) if callable(reply) else reply
+
+
+def compare_found_plan(messages):
+    """Build a dependent call from the actual tool response, not a preselected plan."""
+    search = next(json.loads(item['content']) for item in reversed(messages) if item['role'] == 'tool')
+    return tool_call('compare_scenarios', {
+        'scenario_a': DEMO_PLAN, 'scenario_b': search['result']['results'][0]['decisions'],
+    }, 'compare_found')
+
+
+@pytest.mark.parametrize('objective', ['max_score', 'balanced'])
+def test_search_then_compare_uses_real_result_and_grounded_deltas(monkeypatch, objective):
+    original = agent.tools.compare_scenarios
+    calculated = []
+
+    def compare(**kwargs):
+        result = original(**kwargs)
+        calculated.append(result)
+        return result
+
+    monkeypatch.setattr(agent.tools, 'compare_scenarios', compare)
+    provider = ScriptedProvider([
+        tool_call('search_scenarios', {'objective': objective, 'budget_limit': 90, 'top_k': 1}),
+        compare_found_plan,
+        final('Изменение Score: {{e2.score.delta}}.',
+              calculated_results=['Стоимость варианта: {{e1.results.0.budget.used}}.',
+                                  'Разница расходов: {{e2.budget.delta}}.']),
+    ])
+    response = asyncio.run(run_supervisor(ChatRequest(message='Найди вариант и сравни с моим.', decisions=DEMO_PLAN), provider))
+    assert response.available
+    search, comparison = response.evidence
+    assert [item.tool for item in response.evidence] == ['search_scenarios', 'compare_scenarios']
+    assert comparison.args['scenario_a'] == DEMO_PLAN
+    assert comparison.args['scenario_b'] == search.result['results'][0]['decisions']
+    assert calculated == [comparison.result]
+    assert comparison.result['valid']
+    assert response.summary == f"Изменение Score: {comparison.result['score']['delta']:.2f}."
+    assert response.calculated_results == [f"Стоимость варианта: {search.result['results'][0]['budget']['used']:.0f}.",
+                                           f"Разница расходов: {comparison.result['budget']['delta']:.0f}."]
+
+
+@pytest.mark.parametrize('current', [None, []])
+def test_missing_current_plan_cannot_be_invented_for_comparison(monkeypatch, current):
+    def forbidden(**kwargs):
+        pytest.fail('Invented current plan reached the deterministic comparison')
+
+    monkeypatch.setattr(agent.tools, 'compare_scenarios', forbidden)
+    provider = ScriptedProvider([
+        tool_call('inspect_city_state', {}),  # Even a real demo plan is not the user's plan.
+        tool_call('compare_scenarios', {'scenario_a': DEMO_PLAN, 'scenario_b': DEMO_PLAN}),
+        final('Для сравнения сначала выберите текущий сценарий.'),
+    ])
+    response = asyncio.run(run_supervisor(ChatRequest(message='Сравни с моим текущим планом.', decisions=current), provider))
+    assert response.available
+    assert response.evidence[-1].result['errors'][0]['code'] == 'MISSING_CURRENT_PLAN'
+    assert 'score' not in response.evidence[-1].result
+
+
+def test_missing_previous_plan_is_not_replaced_by_a_made_up_plan(monkeypatch):
+    other = [dict(item) for item in DEMO_PLAN]
+    next(item for item in other if item['measure_id'] == 'M8')['district'] = 'Есиль'
+    monkeypatch.setattr(agent.tools, 'compare_scenarios', lambda **kwargs: pytest.fail('Unsourced comparison'))
+    provider = ScriptedProvider([
+        tool_call('compare_scenarios', {'scenario_a': DEMO_PLAN, 'scenario_b': other}),
+        final('Передайте предыдущий план для сравнения.'),
+    ])
+    response = asyncio.run(run_supervisor(ChatRequest(message='Сравни текущий и предыдущий планы.', decisions=DEMO_PLAN), provider))
+    assert response.available
+    assert response.evidence[0].result['errors'][0]['code'] == 'UNSOURCED_COMPARISON'
+
+
+def test_premature_better_than_current_claim_requires_comparison():
+    provider = ScriptedProvider([
+        tool_call('search_scenarios', {'budget_limit': 90, 'top_k': 1}),
+        final('Найденный план лучше текущего.'),  # No digits: numeric grounding alone cannot catch this.
+        compare_found_plan,
+        final('Рассчитанная разница Score: {{e2.score.delta}}.'),
+    ])
+    response = asyncio.run(run_supervisor(ChatRequest(message='Найди лучший план.', decisions=DEMO_PLAN), provider))
+    assert response.available
+    assert len(provider.requests) == 4
+    assert 'compare_scenarios' in provider.requests[2][0][-1]['content']
+    assert 'лучше текущего' not in response.summary
+    assert [item.tool for item in response.evidence] == ['search_scenarios', 'compare_scenarios']
+
+
+def test_repeated_uncompared_search_claim_is_rejected():
+    provider = ScriptedProvider([
+        tool_call('search_scenarios', {'budget_limit': 90, 'top_k': 1}),
+        final('Найденный план лучше текущего.'), final('Найденный план лучше текущего.'),
+    ])
+    response = asyncio.run(run_supervisor(ChatRequest(message='Найди лучший план.', decisions=DEMO_PLAN), provider))
+    assert not response.available
+    assert not response.summary
+    assert [item.tool for item in response.evidence] == ['search_scenarios']
+
+
+def test_empty_search_does_not_require_a_fabricated_comparison():
+    provider = ScriptedProvider([
+        tool_call('search_scenarios', {'budget_limit': 0}),
+        final('При заданном бюджете допустимых вариантов нет.'),
+    ])
+    response = asyncio.run(run_supervisor(ChatRequest(message='Найди вариант.', decisions=DEMO_PLAN), provider))
+    assert response.available
+    assert not response.evidence[0].result['results']
+
+
+def test_unknown_found_plan_cannot_pass_comparison_guard(monkeypatch):
+    other = [dict(item) for item in DEMO_PLAN]
+    next(item for item in other if item['measure_id'] == 'M8')['district'] = 'Есиль'
+    monkeypatch.setattr(agent.tools, 'compare_scenarios', lambda **kwargs: pytest.fail('Fabricated alternative'))
+    provider = ScriptedProvider([
+        tool_call('search_scenarios', {'budget_limit': 90, 'top_k': 1}),
+        tool_call('compare_scenarios', {'scenario_a': DEMO_PLAN, 'scenario_b': other}),
+        final('Найденный план лучше текущего.'), final('Найденный план лучше текущего.'),
+    ])
+    response = asyncio.run(run_supervisor(ChatRequest(message='Подбери альтернативу.', decisions=DEMO_PLAN), provider))
+    assert not response.available
+    assert response.evidence[-1].result['errors'][0]['code'] == 'UNSOURCED_COMPARISON'
+
+
+def test_tool_call_budget_still_applies_to_multi_tool_batches(monkeypatch):
+    monkeypatch.setattr(agent, 'execute_tool', lambda *args: pytest.fail('Excessive batch executed'))
+    message = tool_call('inspect_city_state', {})
+    message['tool_calls'] *= agent.MAX_TOOL_CALLS + 1
+    response = asyncio.run(run_supervisor(ChatRequest(message='Сделай всё.'), ScriptedProvider([message])))
+    assert not response.available
+    assert not response.evidence
+
+
+def test_comparison_accepts_reordered_plans_and_omitted_null_district():
+    def compare_reordered(messages):
+        message = compare_found_plan(messages)
+        function = message['tool_calls'][0]['function']
+        args = json.loads(function['arguments'])
+        for decisions in args.values():
+            decisions.reverse()
+            for decision in decisions:
+                if decision.get('district') is None:
+                    decision.pop('district', None)
+        function['arguments'] = json.dumps(args)
+        return message
+
+    provider = ScriptedProvider([
+        tool_call('search_scenarios', {'budget_limit': 90, 'top_k': 1}),
+        compare_reordered, final('Разница Score: {{e2.score.delta}}.'),
+    ])
+    response = asyncio.run(run_supervisor(ChatRequest(message='Сравни альтернативу.', decisions=DEMO_PLAN), provider))
+    assert response.available
+    assert response.evidence[-1].result['valid']
+
+
+def test_invalid_current_plan_can_be_explained_after_real_comparison():
+    current = DEMO_PLAN[:4]
+
+    def compare_invalid_current(messages):
+        search = json.loads(messages[-1]['content'])['result']
+        return tool_call('compare_scenarios', {'scenario_a': current, 'scenario_b': search['results'][0]['decisions']})
+
+    provider = ScriptedProvider([
+        tool_call('search_scenarios', {'budget_limit': 90, 'top_k': 1}),
+        compare_invalid_current, final('Текущий план неполон. Сравнить результат нельзя; найден самостоятельный допустимый вариант.'),
+    ])
+    response = asyncio.run(run_supervisor(ChatRequest(message='Найди вариант лучше моего.', decisions=current), provider))
+    assert response.available
+    assert not response.evidence[-1].result['valid']
+    assert response.evidence[-1].result['errors']['scenario_a']
 
 
 def test_supervisor_executes_tool_and_uses_calculated_evidence():
