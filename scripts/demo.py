@@ -19,7 +19,7 @@ def examples():
     search = search_scenarios("max_score", budget_limit=90, top_k=3)
     focus = search_scenarios("focus_district", focus_district="Нура", top_k=3)
     moved = deepcopy(DEMO_PLAN)
-    next(item for item in moved if item["measure_id"] == "M8")["district"] = "Есиль"
+    next(item for item in moved if item["measure_id"] == "M1")["district"] = "Есиль"
     comparison = compare_scenarios(DEMO_PLAN, moved)
     return {
         "A_manual": brief(manual),

@@ -28,7 +28,7 @@ test('manual demo, changed placement, prior comparison and stale-result invalida
   await page.evaluate(() => window.scrollTo(0, 0))
   await page.screenshot({ path: 'test-results/results-desktop.png', fullPage: true })
   await page.getByRole('button', { name: 'Изменить план' }).click()
-  await page.getByLabel('Район для M8', { exact: true }).selectOption('Есиль')
+  await page.getByLabel('Район для M1', { exact: true }).selectOption('Есиль')
   await page.getByRole('button', { name: 'Результаты', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'Здесь появится результат вашей стратегии' })).toBeVisible()
   await page.getByRole('button', { name: 'Конструктор решений', exact: true }).click()

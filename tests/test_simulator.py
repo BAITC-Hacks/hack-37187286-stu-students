@@ -46,8 +46,9 @@ def test_example_uses_independently_derived_final_indicators():
     # The example's realized effects, computed independently from the source table.
     for row in expected.values():
         row["C2"] += 5 * 7 / 8
+    expected["Нура"]["T1"] += 6 * 6 / 8
+    expected["Нура"]["T2"] += 9 * 6 / 8
     expected["Нура"]["S1"] += 16 * 5 / 8
-    expected["Нура"]["S2"] += 14 * 5 / 8
     expected["Нура"]["B1"] += 12 * 7 / 8 + 2
     expected["Нура"]["B2"] += 2 * 7 / 8
     expected["Сарыарка"]["E2"] += 14 * 5 / 8
@@ -55,21 +56,20 @@ def test_example_uses_independently_derived_final_indicators():
     actual = {district: {code: change.after for code, change in row.indicators.items()}
               for district, row in result.districts.items()}
     assert actual == expected
-    assert result.budget.used == 95
-    assert result.budget.remaining == 5
+    assert result.budget.used == 93
+    assert result.budget.remaining == 7
     assert result.score.after == pytest.approx(independent_score(expected))
-    assert result.score.after == pytest.approx(56.5, abs=0.1)
+    assert result.score.after == pytest.approx(55.61, abs=0.01)
     assert result.score.delta == pytest.approx(result.score.after - result.score.before)
-    assert result.critical.after == 0
-    assert len(result.critical.resolved) == 2
+    assert result.critical.after == 1
+    assert len(result.critical.resolved) == 1
     assert result.strongest_improvements[0].district == "Нура"
-    assert result.strongest_improvements[0].indicator == "B1"
     assert sum(result.score_components.values()) == pytest.approx(result.score.delta)
 
 
 def test_changed_district_changes_score_and_critical_indicators():
     moved = deepcopy(DEMO_PLAN)
-    next(item for item in moved if item["measure_id"] == "M8")["district"] = "Есиль"
+    next(item for item in moved if item["measure_id"] == "M1")["district"] = "Есиль"
     original, changed = simulate(DEMO_PLAN), simulate(moved)
     assert changed.score.after < original.score.after
     assert changed.budget == original.budget

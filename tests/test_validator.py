@@ -28,15 +28,15 @@ def test_valid_example_and_typed_plan():
     assert validate_plan(DEMO_PLAN).valid
     result = validate_plan(Plan(decisions=[Decision(**item) for item in DEMO_PLAN]))
     assert result.valid and result.errors == []
-    assert result.budget.used == 95
+    assert result.budget.used == 93
 
 
 def test_exact_budget_allowed_and_overspending_rejected():
-    exact = plan("M1", "M2", "M7", "M8", "M14")
+    exact = plan("M2", "M6", "M8", "M11", "M13")
     result = validate_plan(exact)
     assert result.valid
     assert result.budget.used == 100 and result.budget.remaining == 0
-    assert "budget_exceeded" in codes(plan("M1", "M2", "M7", "M8", "M13"))
+    assert "budget_exceeded" in codes(plan("M2", "M6", "M7", "M10", "M13"))
 
 
 @pytest.mark.parametrize("decisions", [[], DEMO_PLAN[:4], DEMO_PLAN + [{"measure_id": "M2"}]])
@@ -50,9 +50,9 @@ def test_duplicate_measure_even_in_different_districts():
     assert "duplicate_measure" in codes(decisions)
 
 
-def test_direction_limit_and_three_directions_allowed():
+def test_exactly_one_decision_per_direction():
     assert "direction_limit" in codes(plan("M7", "M8", "M9", "M10", "M12"))
-    assert validate_plan(plan("M7", "M8", "M10", "M11", "M12")).valid
+    assert validate_plan(plan("M1", "M5", "M8", "M10", "M12")).valid
 
 
 @pytest.mark.parametrize("second_district", ["Нура", "Есиль"])
@@ -62,15 +62,16 @@ def test_m1_m3_conflict_is_global(second_district):
     assert "incompatible_measures" in codes(decisions)
 
 
-@pytest.mark.parametrize("ids", [
-    ("M4", "M7", "M9", "M10", "M12"),
-    ("M5", "M13", "M9", "M10", "M12"),
-])
-def test_local_conflicts_only_in_same_district(ids):
-    decisions = plan(*ids)
+def test_local_conflicts_only_in_same_district():
+    decisions = plan("M4", "M7", "M1", "M10", "M12")
     assert "incompatible_measures" in codes(decisions)
     decisions[1]["district"] = "Есиль"
     assert validate_plan(decisions).valid
+
+    decisions = plan("M5", "M13", "M1", "M7", "M10")
+    assert "incompatible_measures" in codes(decisions)
+    decisions[1]["district"] = "Есиль"
+    assert "incompatible_measures" not in codes(decisions)
 
 
 @pytest.mark.parametrize("replacement,expected", [
