@@ -51,9 +51,9 @@ def test_all_objectives_match_exhaustive_independent_oracle(objective, brute_for
     assert result["search"]["valid_candidates"] == len(brute_force_low_budget)
     oracle = sorted(brute_force_low_budget, key=lambda item: _objective_key(item, objective), reverse=True)[:3]
     assert len(result["results"]) == 3
-    for actual, expected in zip(result["results"], oracle):
+    for actual, expected, ranking in zip(result["results"], oracle, result["rankings"]):
         assert _objective_key(actual, objective) == pytest.approx(_objective_key(expected, objective))
-        assert actual["objective_value"] == pytest.approx(_objective_key(actual, objective)[0])
+        assert ranking["objective_value"] == pytest.approx(_objective_key(actual, objective)[0])
         assert validate_plan(actual["decisions"]).valid
 
 

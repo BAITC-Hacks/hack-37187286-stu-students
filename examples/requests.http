@@ -1,0 +1,44 @@
+### City state and calculated baseline
+GET http://127.0.0.1:8000/api/context
+
+### A. Manual scenario from the case
+POST http://127.0.0.1:8000/api/simulate
+Content-Type: application/json
+
+{"decisions":[{"measure_id":"M7","district":"Нура"},{"measure_id":"M8","district":"Нура"},{"measure_id":"M10","district":"Нура"},{"measure_id":"M12","district":null},{"measure_id":"M5","district":"Сарыарка"}]}
+
+### B. Invalid: budget 109, no Score
+POST http://127.0.0.1:8000/api/simulate
+Content-Type: application/json
+
+{"decisions":[{"measure_id":"M7","district":"Нура"},{"measure_id":"M8","district":"Нура"},{"measure_id":"M10","district":"Нура"},{"measure_id":"M13","district":"Нура"},{"measure_id":"M5","district":"Сарыарка"}]}
+
+### C. Exact search within budget 90, no key required
+POST http://127.0.0.1:8000/api/search
+Content-Type: application/json
+
+{"objective":"max_score","budget_limit":90,"top_k":3}
+
+### C. Natural-language advisor, requires LLM configuration
+POST http://127.0.0.1:8000/api/chat
+Content-Type: application/json
+
+{"message":"Найди лучший сценарий до бюджета 90"}
+
+### D. Improve Nura, no key required
+POST http://127.0.0.1:8000/api/search
+Content-Type: application/json
+
+{"objective":"focus_district","focus_district":"Нура","budget_limit":100,"top_k":3}
+
+### D. Natural-language advisor
+POST http://127.0.0.1:8000/api/chat
+Content-Type: application/json
+
+{"message":"Улучши Нуру"}
+
+### E. Compare placement of the health centre; deltas mean B - A
+POST http://127.0.0.1:8000/api/compare
+Content-Type: application/json
+
+{"scenario_a":[{"measure_id":"M7","district":"Нура"},{"measure_id":"M8","district":"Нура"},{"measure_id":"M10","district":"Нура"},{"measure_id":"M12"},{"measure_id":"M5","district":"Сарыарка"}],"scenario_b":[{"measure_id":"M7","district":"Нура"},{"measure_id":"M8","district":"Есиль"},{"measure_id":"M10","district":"Нура"},{"measure_id":"M12"},{"measure_id":"M5","district":"Сарыарка"}]}

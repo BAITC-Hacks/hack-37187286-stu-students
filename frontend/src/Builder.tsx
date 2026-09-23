@@ -13,10 +13,9 @@ export default function Builder({ context, decisions, setDecisions, validation, 
   const directions = [...new Set(context.measures.map(m => m.direction))]
   const measures = context.measures.filter(m => filter === 'Все направления' || m.direction === filter)
   const toggle = (id: string) => {
-    const measure = context.measures.find(m => m.id === id)!
     setDecisions(decisions.some(d => d.measure_id === id)
       ? decisions.filter(d => d.measure_id !== id)
-      : [...decisions, { measure_id: id, district: measure.scope === 'city' ? null : null }])
+      : [...decisions, { measure_id: id, district: null }])
   }
   return <div className="page-enter"><div className="page-heading"><div><div className="eyebrow">Ручной режим</div><h1>Соберите свою стратегию</h1><p>Выберите {context.constraints.decision_count} мероприятий и определите, где они нужнее всего.</p></div><button className="button secondary" onClick={demo}><RotateCcw size={16} /> Загрузить демо</button></div>
     <div className="builder-layout"><section><div className="filter-row" aria-label="Фильтр направлений">{['Все направления', ...directions].map(direction => <button key={direction} className={`filter-chip ${filter === direction ? 'active' : ''}`} aria-pressed={filter === direction} onClick={() => setFilter(direction)}>{direction !== 'Все направления' && directionIcon(direction, 15)}{direction}</button>)}</div><div className="measure-grid">{measures.map(measure => {

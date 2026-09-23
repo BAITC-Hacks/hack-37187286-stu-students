@@ -5,7 +5,10 @@ from copy import deepcopy
 from pydantic import ValidationError
 
 from ai.comparison import compare_scenarios as _compare
-from ai.data import BUDGET, CRITICAL_THRESHOLD, DISTRICTS, HORIZON, INDICATORS, INCOMPATIBILITIES, MEASURES, SYNERGIES
+from ai.data import (
+    BUDGET, CRITICAL_THRESHOLD, DECISION_COUNT, DEMO_PLAN, DISTRICTS, HORIZON,
+    INDICATORS, INCOMPATIBILITIES, MAX_PER_DIRECTION, MEASURES, SYNERGIES,
+)
 from ai.optimizer import search_scenarios
 from ai.scoring import baseline_indicators, score_city
 from ai.simulator import simulate
@@ -21,24 +24,23 @@ def inspect_city_state() -> dict:
         "districts": [{"name": name, **district} for name, district in DISTRICTS.items()],
         "indicators": INDICATORS,
         "measures": [{"id": measure_id, **measure} for measure_id, measure in MEASURES.items()],
+        "synergies": SYNERGIES,
         "baseline": score_city(baseline_indicators()).model_dump(mode="json"),
         "constraints": {
-            "required_decisions": 5,
-            "max_per_direction": 2,
+            "decision_count": DECISION_COUNT,
+            "max_per_direction": MAX_PER_DIRECTION,
             "unique_measures": True,
             "critical_threshold": CRITICAL_THRESHOLD,
             "critical_comparison": "strictly_less_than",
-            "incompatibilities": INCOMPATIBILITIES,
+            "incompatibilities": [
+                {"measures": rule["measures"], "same_district_only": rule["same_district"], "reason": rule["reason"]}
+                for rule in INCOMPATIBILITIES
+            ],
             "synergies": SYNERGIES,
         },
-        "demo_plan": [
-            {"measure_id": "M7", "district": "Нура"},
-            {"measure_id": "M8", "district": "Нура"},
-            {"measure_id": "M10", "district": "Нура"},
-            {"measure_id": "M12", "district": None},
-            {"measure_id": "M5", "district": "Сарыарка"},
-        ],
+        "demo_plan": DEMO_PLAN,
         "data_kind": "synthetic",
+        "synthetic": True,
     })
 
 

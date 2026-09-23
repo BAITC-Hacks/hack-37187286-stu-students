@@ -20,6 +20,10 @@ def test_context_and_health(client):
     assert len(state["districts"]) == 5
     assert len(state["measures"]) == 14
     assert len(state["baseline"]["critical"]) == 2
+    assert state["constraints"]["decision_count"] == 5
+    assert state["constraints"]["max_per_direction"] == 2
+    assert len(state["synergies"]) == 3
+    assert all("same_district_only" in rule for rule in state["constraints"]["incompatibilities"])
 
 
 def test_manual_flow_and_optional_ai(client):
@@ -48,7 +52,7 @@ def test_invalid_plan_has_no_score(client):
     result = client.post("/api/simulate", json={"decisions": plan}).json()
     assert not result["valid"]
     assert "score" not in result
-    assert any(error["code"] == "BUDGET_EXCEEDED" for error in result["errors"])
+    assert any(error["code"] == "budget_exceeded" for error in result["errors"])
 
 
 @pytest.mark.parametrize("body", [None, {"decisions": "wrong"}, {"decisions": [{"measure_id": 3}]}, {"decisions": [], "score": 100}])

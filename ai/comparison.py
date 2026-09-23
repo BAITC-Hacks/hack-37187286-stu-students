@@ -49,8 +49,8 @@ def compare_scenarios(scenario_a: list[Decision], scenario_b: list[Decision]) ->
         "districts": districts,
         "indicators": indicators,
         "critical": {
-            "a": [item.model_dump(mode="json") for item in a.after.critical_indicators],
-            "b": [item.model_dump(mode="json") for item in b.after.critical_indicators],
+            "a": [item.model_dump(mode="json") for item in a.after.critical],
+            "b": [item.model_dump(mode="json") for item in b.after.critical],
             "count_a": a.after.critical_count,
             "count_b": b.after.critical_count,
             "delta": b.after.critical_count - a.after.critical_count,

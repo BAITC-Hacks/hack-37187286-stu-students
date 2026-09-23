@@ -154,7 +154,10 @@ def test_simulation_does_not_mutate_input_or_source():
 
 
 def test_json_dataset_matches_all_source_table_numbers_and_effects():
-    source = (Path(__file__).resolve().parents[1] / "rules" / "Аким на 5 часов датасет.md").read_text(encoding="utf-8")
+    source_path = Path(__file__).resolve().parents[1] / "rules" / "Аким на 5 часов датасет.md"
+    if not source_path.is_file():
+        pytest.skip("Локальные исходники rules/ исключены из Git; дополнительная сверка доступна при их наличии.")
+    source = source_path.read_text(encoding="utf-8")
     rows = [[cell.strip().strip("`") for cell in line.strip().strip("|").split("|")]
             for line in source.splitlines() if line.startswith("|")]
     source_districts = {row[0]: row for row in rows if row[0] in DISTRICTS}

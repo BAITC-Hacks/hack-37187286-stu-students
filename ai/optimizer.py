@@ -14,7 +14,10 @@ from heapq import heappush, heapreplace
 from itertools import combinations, product
 from math import fsum, isfinite
 
-from ai.data import BUDGET, CRITICAL_THRESHOLD, DISTRICTS, INDICATORS, INCOMPATIBILITIES, MEASURES
+from ai.data import (
+    BUDGET, CRITICAL_THRESHOLD, DECISION_COUNT, DISTRICTS, INDICATORS,
+    INCOMPATIBILITIES, MAX_PER_DIRECTION, MEASURES,
+)
 from ai.scoring import baseline_indicators, score_city
 from ai.simulator import apply_effects, simulate
 from backend.schemas import Decision
@@ -54,7 +57,7 @@ def _district_outcome(city_ids: tuple[str, ...], local_ids: tuple[str, ...], dis
 
 
 def _rank(objective, scores, score, cost, baseline_score, focus_index):
-    """Lexicographic objectives; 12-decimal keys remove floating-point tie noise."""
+    """Lexicographic objectives, with no internal rounding."""
     if objective == "balanced":
         values = (min(scores), -(max(scores) - min(scores)), score, -cost)
     elif objective == "focus_district":
@@ -63,7 +66,7 @@ def _rank(objective, scores, score, cost, baseline_score, focus_index):
         values = ((score - baseline_score) / cost, score, -cost)
     else:
         values = (score, -cost)
-    return tuple(round(value, 12) for value in values)
+    return values
 
 
 @lru_cache(maxsize=32)
@@ -79,11 +82,11 @@ def _search(objective: str, budget_limit: float, focus_district: str | None, top
 
     # Numeric IDs and source district order are stable final tie breakers.
     ids = sorted(MEASURES, key=lambda key: int(key[1:]))
-    for measure_ids in combinations(ids, 5):
+    for measure_ids in combinations(ids, DECISION_COUNT):
         selected = set(measure_ids)
         cost = sum(MEASURES[key]["cost"] for key in measure_ids)
         directions = Counter(MEASURES[key]["direction"] for key in measure_ids)
-        if cost > budget_limit or max(directions.values()) > 2 or any(pair <= selected for pair in global_conflicts):
+        if cost > budget_limit or max(directions.values()) > MAX_PER_DIRECTION or any(pair <= selected for pair in global_conflicts):
             pruned_sets += 1
             continue
         valid_sets += 1
@@ -115,7 +118,7 @@ def _search(objective: str, budget_limit: float, focus_district: str | None, top
             elif entry[:2] > best[0][:2]:
                 heapreplace(best, entry)
 
-    results = []
+    results, rankings = [], []
     for rank_number, (ranking, _, measure_ids, placement) in enumerate(sorted(best, reverse=True), 1):
         local_placement = iter(placement)
         decisions = [Decision(measure_id=key, district=districts[next(local_placement)] if MEASURES[key]["scope"] == "district" else None) for key in measure_ids]
@@ -128,16 +131,15 @@ def _search(objective: str, budget_limit: float, focus_district: str | None, top
         )
         if canonical_ranking != ranking:
             raise RuntimeError("Optimizer ranking disagrees with the canonical simulator")
-        item = result.model_dump(mode="json")
-        item.update(rank=rank_number, objective_value=ranking[0])
-        results.append(item)
+        results.append(result.model_dump(mode="json"))
+        rankings.append({"rank": rank_number, "objective_value": ranking[0]})
     return {
         "valid": True,
         "objective": objective,
         "budget_limit": budget_limit,
         "focus_district": focus_district,
         "ranking": OBJECTIVES[objective],
-        "tie_breaking": "Численные ключи до 12 знаков; затем порядок ID мероприятий и районов в датасете",
+        "tie_breaking": "При равных численных ключах: порядок ID мероприятий и районов в датасете",
         "search": {
             "exhaustive": True,
             "valid_candidates": valid_candidates,
@@ -146,6 +148,7 @@ def _search(objective: str, budget_limit: float, focus_district: str | None, top
             "rejected_placements": rejected_placements,
         },
         "results": results,
+        "rankings": rankings,
         "message": None if results else "Нет допустимого набора ровно из пяти мероприятий в указанном бюджете.",
     }
 
