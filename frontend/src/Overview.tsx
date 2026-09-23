@@ -35,8 +35,24 @@ import {
   createAstanaMapStyle,
 } from './mapData'
 import type { CityContext, Page } from './types'
-
 type MapLayer = 'all' | 'Транспорт' | 'Экология' | 'Соцсфера' | 'Безопасность' | 'Сервисы'
+
+function getSafeMaxCanvasSize(): [number, number] {
+  try {
+    const canvas = document.createElement('canvas')
+    const gl = (canvas.getContext('webgl2') || canvas.getContext('webgl')) as WebGLRenderingContext | null
+    if (gl) {
+      const maxTexture = gl.getParameter(gl.MAX_TEXTURE_SIZE)
+      if (typeof maxTexture === 'number' && maxTexture >= 4096) {
+        const safe = Math.min(maxTexture, 8192)
+        return [safe, safe]
+      }
+    }
+  } catch {
+    // fallback if WebGL context creation fails
+  }
+  return [8192, 8192]
+}
 
 export default function Overview({
   context,
@@ -155,7 +171,7 @@ export default function Overview({
       minZoom: 9,
       maxZoom: 14.5,
       attributionControl: false,
-      maxCanvasSize: [4096, 4096],
+      maxCanvasSize: getSafeMaxCanvasSize(),
     })
 
     requestAnimationFrame(() => {
@@ -460,8 +476,10 @@ export default function Overview({
 
             <div className="gis-top-toolbar">
               <div className="map-layer-selector">
-                <span className="small muted">Слой:</span>
+                <label htmlFor="gis-map-layer-select" className="small muted">Слой:</label>
                 <select
+                  id="gis-map-layer-select"
+                  name="mapLayer"
                   aria-label="Аналитический слой карты"
                   value={activeLayer}
                   onChange={e => setActiveLayer(e.target.value as MapLayer)}

@@ -4,6 +4,7 @@ import {
   ArrowRight,
   ArrowUpRight,
   Check,
+  ChevronDown,
   CircleAlert,
   Flame,
   GitCompareArrows,
@@ -307,19 +308,49 @@ export default function Results({
           eyebrow="ДЕТАЛЬНАЯ ВЕРИФИКАЦИЯ"
           title="Сдвиг ключевых показателей города"
           right={
-            <select
-              className="input compact"
-              aria-label="Фильтр по району"
-              value={districtFilter}
-              onChange={e => setDistrictFilter(e.target.value)}
-            >
-              <option>Все районы</option>
-              {context.districts.map(d => (
-                <option key={d.name}>{d.name}</option>
-              ))}
-            </select>
+            <label className="select-field has-district compact-select">
+              <MapPin size={13} />
+              <select
+                id="results-district-filter"
+                name="districtFilter"
+                aria-label="Фильтр по району"
+                value={districtFilter}
+                onChange={e => setDistrictFilter(e.target.value)}
+              >
+                <option>Все районы</option>
+                {context.districts.map(d => (
+                  <option key={d.name}>{d.name}</option>
+                ))}
+              </select>
+              <ChevronDown size={13} />
+            </label>
           }
         />
+
+        <div className="results-filter-strip" aria-label="Быстрый фильтр по районам">
+          <button
+            type="button"
+            className={`district-filter-pill ${districtFilter === 'Все районы' ? 'active' : ''}`}
+            onClick={() => setDistrictFilter('Все районы')}
+          >
+            Все районы ({result.indicator_changes.filter(c => c.delta !== 0).length})
+          </button>
+          {context.districts.map(d => {
+            const count = result.indicator_changes.filter(c => c.district === d.name && c.delta !== 0).length
+            return (
+              <button
+                key={d.name}
+                type="button"
+                className={`district-filter-pill ${districtFilter === d.name ? 'active' : ''}`}
+                onClick={() => setDistrictFilter(d.name)}
+              >
+                <MapPin size={12} />
+                <span>{d.name}</span>
+                {count > 0 && <span className="filter-count">{count}</span>}
+              </button>
+            )
+          })}
+        </div>
         <div className="table-scroll">
           <table>
             <thead>

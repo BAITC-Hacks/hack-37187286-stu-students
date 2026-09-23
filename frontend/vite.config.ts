@@ -12,6 +12,7 @@ export default defineConfig({
   server: { port: 5173, strictPort: false, proxy },
   preview: { port: 4173, strictPort: false, proxy },
   build: {
+    target: 'esnext',
     chunkSizeWarningLimit: 1200,
     rollupOptions: {
       output: {

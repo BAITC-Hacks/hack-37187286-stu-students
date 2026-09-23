@@ -201,18 +201,26 @@ export default function Leaderboard({
 
           <div className="save-team-form">
             <input
+              id="leaderboard-team-name"
+              name="teamName"
               type="text"
               className="input"
+              aria-label="Название вашей команды"
               placeholder="Название вашей команды (напр., Smart City Astana)"
               value={newTeamName}
               onChange={e => setNewTeamName(e.target.value)}
+              autoComplete="organization"
             />
             <input
+              id="leaderboard-strategy-title"
+              name="strategyTitle"
               type="text"
               className="input"
+              aria-label="Краткое название стратегии"
               placeholder="Краткое название стратегии (напр., Социальный рывок)"
               value={strategyTitle}
               onChange={e => setStrategyTitle(e.target.value)}
+              autoComplete="off"
             />
             <button className="button primary" onClick={saveCurrentStrategy}>
               <Plus size={16} /> Сохранить в лидерборд

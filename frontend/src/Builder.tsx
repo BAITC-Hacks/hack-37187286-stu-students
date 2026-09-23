@@ -166,7 +166,10 @@ export default function Builder({ context, decisions, setDecisions, validation, 
             <p className="small muted">
               Вставьте JSON с 5 решениями. Поле <code>district</code> опционально (для общегородских мер, таких как M12, передается <code>null</code> или опускается):
             </p>
+            <label htmlFor="builder-json-input" className="sr-only">JSON план решений</label>
             <textarea
+              id="builder-json-input"
+              name="jsonPlan"
               className="json-textarea"
               rows={9}
               value={jsonInput}
@@ -224,10 +227,14 @@ export default function Builder({ context, decisions, setDecisions, validation, 
             <div className="search-field">
               <Search size={16} />
               <input
+                id="builder-search-input"
+                name="searchQuery"
+                aria-label="Поиск по названию или коду меры"
                 type="text"
                 placeholder="Поиск по названию, коду (M1, T1...) или эффектам"
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
+                autoComplete="off"
               />
               {searchQuery && <button className="clear-search" onClick={() => setSearchQuery('')}>×</button>}
             </div>
@@ -289,26 +296,64 @@ export default function Builder({ context, decisions, setDecisions, validation, 
                     ))}
                   </div>
 
+                  {selection && measure.scope === 'district' && (
+                    <div className={`district-select-block ${selection.district ? 'assigned' : 'unassigned'}`}>
+                      <div className="district-select-header">
+                        <span className="district-select-label">
+                          <MapPin size={13} />
+                          {selection.district ? (
+                            <>Назначен район: <strong>{selection.district}</strong></>
+                          ) : (
+                            <span className="district-alert">Выберите район размещения:</span>
+                          )}
+                        </span>
+
+                        <label className={`select-field ${selection.district ? 'has-district' : 'needs-district'}`} htmlFor={`district-select-${measure.id}`}>
+                          <span className="sr-only">Район для {measure.id}</span>
+                          <MapPin size={14} />
+                          <select
+                            id={`district-select-${measure.id}`}
+                            name={`district-${measure.id}`}
+                            aria-label={`Район для ${measure.id}`}
+                            value={selection.district ?? ''}
+                            onChange={e => setDecisions(decisions.map(d => d.measure_id === measure.id ? { ...d, district: e.target.value || null } : d))}
+                          >
+                            <option value="">Выберите район</option>
+                            {context.districts.map(d => <option key={d.name}>{d.name}</option>)}
+                          </select>
+                          <ChevronDown size={13} />
+                        </label>
+                      </div>
+
+                      <div className="district-pills-row" aria-label={`Быстрый выбор района для ${measure.id}`}>
+                        {context.districts.map(d => {
+                          const isDistrictActive = selection.district === d.name
+                          return (
+                            <button
+                              key={d.name}
+                              type="button"
+                              className={`district-pill-btn ${isDistrictActive ? 'active' : ''}`}
+                              onClick={() => setDecisions(decisions.map(item => item.measure_id === measure.id ? { ...item, district: d.name } : item))}
+                              title={`Выбрать район ${d.name}`}
+                            >
+                              {d.name}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="measure-bottom">
-                    {selection && measure.scope === 'district' ? (
-                      <label className="select-field">
-                        <span className="sr-only">Район для {measure.id}</span>
-                        <MapPin size={15} />
-                        <select
-                          aria-label={`Район для ${measure.id}`}
-                          value={selection.district ?? ''}
-                          onChange={e => setDecisions(decisions.map(d => d.measure_id === measure.id ? { ...d, district: e.target.value || null } : d))}
-                        >
-                          <option value="">Выберите район</option>
-                          {context.districts.map(d => <option key={d.name}>{d.name}</option>)}
-                        </select>
-                        <ChevronDown size={14} />
-                      </label>
-                    ) : (
-                      <span className="small muted">
-                        {selection ? 'Применится ко всем районам' : `Полный охват: ${measure.scope === 'city' ? 'Астана' : 'район'}`}
-                      </span>
-                    )}
+                    <span className="small muted">
+                      {measure.scope === 'city'
+                        ? '🌐 Общереспубликанский охват (вся Астана)'
+                        : selection?.district
+                          ? `📍 Применяется в р-не ${selection.district}`
+                          : selection
+                            ? '⚠️ Выберите район выше'
+                            : '📍 Районная инициатива'}
+                    </span>
 
                     <button
                       aria-label={`${selection ? 'Убрать' : 'Добавить'} ${measure.id}`}
@@ -392,9 +437,16 @@ export default function Builder({ context, decisions, setDecisions, validation, 
                   <span className="selection-index">{String(index + 1).padStart(2, '0')}</span>
                   <div>
                     <strong>{measure.name}</strong>
-                    <span>
-                      {decision.district ?? (measure.scope === 'city' ? 'Весь город' : 'Укажите район')} · {measure.cost} ед.
-                    </span>
+                    <div className="selected-item-meta">
+                      {measure.scope === 'city' ? (
+                        <span className="scope-tag city">🌐 Весь город</span>
+                      ) : decision.district ? (
+                        <span className="scope-tag district">📍 {decision.district}</span>
+                      ) : (
+                        <span className="scope-tag warning">⚠️ Не выбран район</span>
+                      )}
+                      <span className="cost-tag">{measure.cost} ед.</span>
+                    </div>
                   </div>
                   <button className="icon-button" aria-label={`Удалить ${decision.measure_id}`} onClick={() => toggle(decision.measure_id)}>
                     <Trash2 size={15} />

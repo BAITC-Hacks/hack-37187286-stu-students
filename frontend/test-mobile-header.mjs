@@ -12,8 +12,8 @@ async function run() {
   await page.waitForTimeout(300)
   await page.screenshot({ path: 'header-mobile-menu-open.png' })
 
-  // Close mobile drawer via close button or overlay
-  await page.locator('.menu-overlay').click()
+  // Close mobile drawer via close button
+  await page.locator('.sidebar-close').click()
   await page.waitForTimeout(200)
 
   // Open profile on mobile

@@ -936,6 +936,62 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* Responsive adjustments for Topbar */
+@media(max-width: 900px) {
+  .topbar {
+    padding: 0 18px;
+  }
+  .breadcrumb-root {
+    display: none !important;
+  }
+  .breadcrumb-separator {
+    display: none !important;
+  }
+}
+
+@media(max-width: 680px) {
+  .topbar {
+    height: 64px;
+    padding: 0 12px;
+  }
+  .topbar-right {
+    gap: 8px;
+  }
+  .model-label-btn {
+    padding: 6px 8px;
+    font-size: 9px;
+  }
+  .model-label-btn span:not(.pulse-dot) {
+    display: none;
+  }
+  .topbar-status-bar {
+    gap: 4px;
+    padding: 2px 6px;
+  }
+  .topbar-budget-pill {
+    padding: 3px 6px;
+    font-size: 10px;
+  }
+}
+
+@media(max-width: 480px) {
+  .topbar-status-bar {
+    gap: 3px;
+    padding: 2px 4px;
+  }
+  .topbar-balance-dots {
+    padding: 2px 4px;
+    gap: 3px;
+  }
+  .model-label-btn {
+    display: none;
+  }
+  .profile-dropdown {
+    right: -10px;
+    width: min(320px, calc(100vw - 20px));
+  }
+}
+
 /* Domains Strip (Overview) */
 .domains-strip {
   display: grid;
@@ -1528,3 +1584,338 @@
   border-radius: 6px;
   border: 1px solid #cbd5e1;
 }
+
+/* ==========================================================================
+   BUILDER DISTRICT SELECTION & ACTION BUTTONS
+   ========================================================================== */
+.district-select-block {
+  margin: 14px 0 10px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: fadeInDown 0.2s ease-out;
+}
+
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.district-select-block.assigned {
+  background: #f0fdf4;
+  border: 1.5px solid #86efac;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.08);
+}
+
+.district-select-block.unassigned {
+  background: #fffbeb;
+  border: 1.5px dashed #f59e0b;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.1);
+}
+
+.district-select-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 9px;
+  flex-wrap: wrap;
+}
+
+.district-select-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.district-select-label strong {
+  color: #047857;
+  font-weight: 700;
+  background: #dcfce7;
+  padding: 1px 7px;
+  border-radius: 5px;
+  border: 1px solid #bbf7d0;
+}
+
+.district-alert {
+  color: #b45309;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: -0.01em;
+}
+
+/* Modern Select Field */
+.select-field {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 8px;
+  padding: 6px 10px;
+  background: #ffffff;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  min-width: 150px;
+  max-width: 190px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.select-field.has-district {
+  border: 1.5px solid #10b981;
+  background: #ffffff;
+  color: #064e3b;
+}
+
+.select-field.has-district:hover {
+  border-color: #059669;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.18);
+}
+
+.select-field.needs-district {
+  border: 1.5px solid #f59e0b;
+  background: #fffbeb;
+  color: #92400e;
+}
+
+.select-field.needs-district:hover {
+  border-color: #d97706;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2);
+}
+
+.select-field select {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: inherit;
+  cursor: pointer;
+  outline: none;
+  width: 100%;
+  padding-right: 18px;
+}
+
+.select-field > svg:first-of-type {
+  flex-shrink: 0;
+  color: currentColor;
+}
+
+.select-field > svg:last-child {
+  position: absolute;
+  right: 8px;
+  pointer-events: none;
+  color: currentColor;
+  opacity: 0.7;
+}
+
+/* 5 Quick District Selection Pills */
+.district-pills-row {
+  display: flex;
+  gap: 5px;
+  width: 100%;
+}
+
+.district-pill-btn {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 4px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.district-pill-btn:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+  color: #0f172a;
+  transform: translateY(-1px);
+}
+
+.district-pill-btn.active {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  border-color: #047857;
+  color: #ffffff;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(5, 150, 105, 0.35);
+  transform: translateY(-1px);
+}
+
+/* Modernized Choose Button */
+.choose-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 7px 14px;
+  cursor: pointer;
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+}
+
+.choose-button:not(.chosen) {
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  color: #334155;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.choose-button:not(.chosen):hover {
+  background: #f8fafc;
+  border-color: #059669;
+  color: #059669;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(5, 150, 105, 0.15);
+}
+
+.choose-button.chosen {
+  background: #ecfdf5;
+  border: 1.5px solid #10b981;
+  color: #047857;
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.2);
+}
+
+.choose-button.chosen:hover {
+  background: #fee2e2;
+  border-color: #ef4444;
+  color: #b91c1c;
+}
+
+/* Compact select variant for toolbars and form rows */
+.select-field.compact-select {
+  min-width: 140px;
+  max-width: 175px;
+  padding: 4px 8px;
+  font-size: 11px;
+}
+.select-field.compact-select select {
+  font-size: 11px;
+}
+
+/* Advisor Focus District Group */
+.district-focus-group {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+/* Results District Filter Strip */
+.results-filter-strip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 12px 0 16px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.district-filter-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 11.5px;
+  font-weight: 600;
+  border: 1.5px solid #e2e8f0;
+  background: #ffffff;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.district-filter-pill:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+  color: #0f172a;
+  transform: translateY(-1px);
+}
+
+.district-filter-pill.active {
+  background: #0f172a;
+  border-color: #0f172a;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.25);
+  transform: translateY(-1px);
+}
+
+.district-filter-pill .filter-count {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 10px;
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.district-filter-pill.active .filter-count {
+  background: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+}
+
+/* Sidebar Selected Item Meta Tags */
+.selected-item-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 5px;
+  flex-wrap: wrap;
+}
+
+.scope-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1.5px 7px;
+  border-radius: 5px;
+  letter-spacing: -0.01em;
+}
+
+.scope-tag.city {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+.scope-tag.district {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
+.scope-tag.warning {
+  background: #fffbeb;
+  color: #b45309;
+  border: 1.5px dashed #f59e0b;
+  font-weight: 700;
+}
+
+.cost-tag {
+  font-size: 10px;
+  color: #64748b;
+  font-weight: 600;
+  background: #f1f5f9;
+  padding: 1.5px 6px;
+  border-radius: 4px;
+}
+
+

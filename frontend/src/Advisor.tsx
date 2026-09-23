@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { ArrowRight, ChevronDown, CircleHelp, Compass, Send, SlidersHorizontal, Sparkles, Target } from 'lucide-react'
+import { ArrowRight, ChevronDown, CircleHelp, Compass, MapPin, Send, SlidersHorizontal, Sparkles, Target } from 'lucide-react'
 import { errorText, request } from './api'
 import { ErrorNotice, Loading, PanelTitle, ScenarioCard } from './components'
 import type { AgentResponse, ChatMessage, CityContext, Decision, Objective, SearchResult, Simulation } from './types'
@@ -227,6 +227,7 @@ export default function Advisor({ context, decisions, previous, apply }: {
             </label>
             <textarea
               id="advisor-message"
+              name="advisorMessage"
               value={message}
               maxLength={4000}
               placeholder="Например: улучшить Нуру, бюджет до 90…"
@@ -271,10 +272,12 @@ export default function Advisor({ context, decisions, previous, apply }: {
               <legend>Что для вас важнее?</legend>
               {objectives.map(item => (
                 <label
+                  htmlFor={`advisor-objective-${item.value}`}
                   className={`objective-option ${objective === item.value ? 'active' : ''}`}
                   key={item.value}
                 >
                   <input
+                    id={`advisor-objective-${item.value}`}
                     type="radio"
                     name="objective"
                     value={item.value}
@@ -294,6 +297,7 @@ export default function Advisor({ context, decisions, previous, apply }: {
               <div className="budget-input">
                 <input
                   id="budget-limit"
+                  name="budgetLimit"
                   type="number"
                   min="0"
                   max={context.budget}
@@ -307,18 +311,42 @@ export default function Advisor({ context, decisions, previous, apply }: {
             </div>
 
             {objective === 'focus_district' && (
-              <div className="form-group">
-                <label htmlFor="focus-district">Приоритетный район</label>
-                <select
-                  className="input full"
-                  id="focus-district"
-                  value={focus}
-                  onChange={e => setFocus(e.target.value)}
-                >
-                  {context.districts.map(d => (
-                    <option key={d.name}>{d.name}</option>
-                  ))}
-                </select>
+              <div className="form-group district-focus-group">
+                <div className="flex-between" style={{ marginBottom: 8 }}>
+                  <label htmlFor="focus-district" style={{ margin: 0, fontWeight: 600 }}>Приоритетный район:</label>
+                  <label className="select-field has-district compact-select">
+                    <MapPin size={13} />
+                    <select
+                      className="input full"
+                      id="focus-district"
+                      name="focusDistrict"
+                      aria-label="Приоритетный район"
+                      value={focus}
+                      onChange={e => setFocus(e.target.value)}
+                    >
+                      {context.districts.map(d => (
+                        <option key={d.name}>{d.name}</option>
+                      ))}
+                    </select>
+                    <ChevronDown size={13} />
+                  </label>
+                </div>
+
+                <div className="district-pills-row" aria-label="Выбор приоритетного района">
+                  {context.districts.map(d => {
+                    const isActive = focus === d.name
+                    return (
+                      <button
+                        key={d.name}
+                        type="button"
+                        className={`district-pill-btn ${isActive ? 'active' : ''}`}
+                        onClick={() => setFocus(d.name)}
+                      >
+                        {d.name}
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
             )}
 
