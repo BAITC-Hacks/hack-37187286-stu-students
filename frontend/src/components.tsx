@@ -37,3 +37,45 @@ export function ScenarioCard({ result, context, index, apply }: { result: Simula
 export function ModelNote() {
   return <div className="model-note"><CircleHelp size={15} /><span>Учебная модель HackAlem. Показатели синтетические и не отражают реальную статистику Астаны.</span></div>
 }
+
+export const CITY_DOMAINS = [
+  { id: 'Транспорт', name: 'Транспорт', indicators: ['T1', 'T2'], color: '#0284c7' },
+  { id: 'Экология', name: 'Экология', indicators: ['E1', 'E2'], color: '#10b981' },
+  { id: 'Соцсфера', name: 'Соцсфера', indicators: ['S1', 'S2'], color: '#8b5cf6' },
+  { id: 'Безопасность', name: 'Безопасность', indicators: ['B1', 'B2'], color: '#f59e0b' },
+  { id: 'Сервисы', name: 'Сервисы', indicators: ['C1', 'C2'], color: '#06b6d4' },
+] as const
+
+export function calculateDomainScores(context: CityContext, result?: Simulation | null) {
+  return CITY_DOMAINS.map(domain => {
+    let beforeSum = 0
+    let afterSum = 0
+    let count = 0
+
+    for (const district of context.districts) {
+      for (const ind of domain.indicators) {
+        const valBefore = district.indicators[ind] ?? 50
+        beforeSum += valBefore
+
+        if (result && result.districts[district.name]?.indicators[ind]) {
+          afterSum += result.districts[district.name].indicators[ind].after
+        } else {
+          afterSum += valBefore
+        }
+        count++
+      }
+    }
+
+    const beforeAvg = count > 0 ? beforeSum / count : 0
+    const afterAvg = count > 0 ? afterSum / count : 0
+
+    return {
+      domain: domain.name,
+      before: Math.round(beforeAvg * 10) / 10,
+      after: Math.round(afterAvg * 10) / 10,
+      delta: Math.round((afterAvg - beforeAvg) * 10) / 10,
+      color: domain.color,
+    }
+  })
+}
+

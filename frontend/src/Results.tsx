@@ -1,36 +1,480 @@
 import { useState } from 'react'
-import { ArrowLeft, ArrowRight, ArrowUpRight, Check, CircleAlert, GitCompareArrows, Layers3, MapPin, RefreshCw, Sparkles, Target, Wallet } from 'lucide-react'
-import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import {
+  ArrowLeft,
+  ArrowRight,
+  ArrowUpRight,
+  Check,
+  CircleAlert,
+  Flame,
+  GitCompareArrows,
+  MapPin,
+  Presentation,
+  RefreshCw,
+  Sparkles,
+  Target,
+  Wallet,
+  Zap,
+} from 'lucide-react'
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Legend,
+  PolarAngleAxis,
+  PolarGrid,
+  PolarRadiusAxis,
+  Radar,
+  RadarChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts'
 import { errorText, format, request, signed } from './api'
-import { Delta, Empty, ErrorNotice, Loading, PanelTitle, Stat } from './components'
-import type { Analysis, CityContext, Comparison, Simulation } from './types'
+import { calculateDomainScores, Delta, Empty, ErrorNotice, Loading, PanelTitle, Stat } from './components'
+import type { Analysis, CityContext, Comparison, Page, Simulation } from './types'
 
-export default function Results({ context, result, previous, edit, advisor, analysis, analyzing, analyze }: {
-  context: CityContext; result: Simulation | null; previous: Simulation | null; edit: () => void; advisor: () => void
-  analysis: Analysis | null; analyzing: boolean; analyze: () => void
+export default function Results({
+  context,
+  result,
+  previous,
+  edit,
+  advisor,
+  analysis,
+  analyzing,
+  analyze,
+  go,
+}: {
+  context: CityContext
+  result: Simulation | null
+  previous: Simulation | null
+  edit: () => void
+  advisor: () => void
+  analysis: Analysis | null
+  analyzing: boolean
+  analyze: () => void
+  go?: (page: Page) => void
 }) {
   const [comparison, setComparison] = useState<Comparison | null>(null)
   const [compareError, setCompareError] = useState<string | null>(null)
   const [comparing, setComparing] = useState(false)
   const [districtFilter, setDistrictFilter] = useState('Все районы')
-  if (!result) return <Empty title="Здесь появится результат вашей стратегии" action={<button className="button primary" onClick={edit}>Выбрать решения <ArrowRight size={17} /></button>}>Выберите пять мероприятий в конструкторе и запустите расчёт. Все оценки будут получены из модели города.</Empty>
-  const chart = Object.entries(result.districts).map(([name, d]) => ({ name, 'До': d.score.before, 'После': d.score.after }))
-  const changes = result.indicator_changes.filter(c => c.delta !== 0 && (districtFilter === 'Все районы' || c.district === districtFilter))
-  async function compare() {
-    setComparing(true); setCompareError(null)
-    try { setComparison(await request<Comparison>('/compare', { scenario_a: previous!.decisions, scenario_b: result!.decisions })) }
-    catch (e) { setCompareError(errorText(e)) }
-    finally { setComparing(false) }
-  }
-  return <div className="page-enter"><div className="page-heading"><div><div className="eyebrow">Результат симуляции · {context.horizon} кварталов</div><h1>Ваши решения в действии</h1><p>Посмотрите, как изменится город при выбранной стратегии.</p></div><button className="button secondary" onClick={edit}><ArrowLeft size={16} /> Изменить план</button></div>
-    <section className="result-banner"><div><div className="hero-tag"><span /> ASTANA QUALITY OF LIFE SCORE</div><div className="result-score"><span>{format(result.score.before)}</span><ArrowRight size={30} /><strong data-testid="result-score">{format(result.score.after)}</strong><Delta value={result.score.delta} /></div><p>Итоговая оценка с учётом среднего по городу, слабого района и критических показателей.</p></div><div className="result-seal"><Target size={34} strokeWidth={1} /><span>ПЛАН ПРОВЕРЕН</span><strong>{result.decisions.length} решений</strong></div></section>
-    <section className="stats-grid result-stats"><Stat label="Использовано бюджета" value={<>{result.budget.used}<span>/ {result.budget.total}</span></>} caption={`Осталось ${result.budget.remaining} ед.`} icon={<Wallet size={19} />} /><Stat label="Критические показатели" value={<><span className="before-value">{result.critical.before}</span><ArrowRight size={20} />{result.critical.after}</>} caption={result.critical.after === 0 ? 'Все показатели не ниже критического порога' : 'Точки для следующего решения'} icon={<CircleAlert size={19} />} tone={result.critical.after ? 'attention' : ''} /><Stat label="Самый слабый район" value={<span className="name-value">{result.weakest_district.after}</span>} caption={`Оценка ${format(result.after.minimum)}`} icon={<MapPin size={19} />} /><Stat label="Синергии" value={result.synergies.length} caption="Дополнительные эффекты сочетаний мер" icon={<Layers3 size={19} />} /></section>
-    <div className="results-grid"><section className="panel chart-panel"><PanelTitle eyebrow="ДО И ПОСЛЕ" title="Что изменилось в районах" /><div className="chart-container" role="img" aria-label="Сравнение оценок пяти районов до и после стратегии"><ResponsiveContainer width="100%" height="100%" minWidth={0}><BarChart data={chart} margin={{ top: 14, right: 4, bottom: 0, left: -24 }} barGap={5}><CartesianGrid strokeDasharray="3 6" vertical={false} stroke="#e8ece5" /><XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#69776e', fontSize: 12 }} tickMargin={12} /><YAxis domain={[0, 100]} axisLine={false} tickLine={false} tick={{ fill: '#92a094', fontSize: 11 }} /><Tooltip cursor={{ fill: '#f0f3ec' }} contentStyle={{ border: '1px solid #e1e7de', borderRadius: 12, fontSize: 13 }} formatter={value => format(Number(value))} /><Legend iconType="circle" iconSize={7} wrapperStyle={{ fontSize: 12, paddingTop: 20 }} /><Bar isAnimationActive={false} dataKey="До" fill="#d4ddcb" radius={[5, 5, 0, 0]} maxBarSize={34} /><Bar isAnimationActive={false} dataKey="После" fill="#387b61" radius={[5, 5, 0, 0]} maxBarSize={34} /></BarChart></ResponsiveContainer></div><div className="district-deltas">{Object.entries(result.districts).map(([name, data]) => <div key={name}><span>{name}</span><Delta value={data.score.delta} /></div>)}</div></section>
-    <section className="panel ai-panel"><PanelTitle eyebrow="ВТОРОЙ ВЗГЛЯД" title="AI-анализ стратегии" right={<Sparkles size={21} />} />{analyzing ? <Loading>Советник изучает результат…</Loading> : analysis?.available ? <div className="analysis-text">{analysis.explanation}</div> : <div className="ai-unavailable"><div className="icon-tile"><Sparkles size={25} /></div><h3>AI-объяснение недоступно</h3><p>{analysis?.message ?? 'Запросите объяснение, чтобы разобрать эффекты и компромиссы вашего плана.'}</p><p className="small">Рассчитанные показатели доступны полностью.</p><button className="text-button" onClick={analyze}><RefreshCw size={14} />{analysis ? 'Повторить запрос' : 'Получить объяснение'}</button></div>}<button className="button secondary full" onClick={advisor}>Обсудить с советником <ArrowUpRight size={16} /></button></section></div>
-    <section className="panel"><PanelTitle eyebrow="ДЕТАЛИ РЕЗУЛЬТАТА" title="Изменения показателей" right={<select className="input compact" aria-label="Фильтр изменений по району" value={districtFilter} onChange={e => setDistrictFilter(e.target.value)}><option>Все районы</option>{context.districts.map(d => <option key={d.name}>{d.name}</option>)}</select>} /><div className="table-scroll"><table><thead><tr><th>Район</th><th>Показатель</th><th>До</th><th>После</th><th>Изменение</th></tr></thead><tbody>{changes.map(change => <tr key={`${change.district}-${change.indicator}`}><td><strong>{change.district}</strong></td><td><span className="table-code">{change.indicator}</span>{context.indicators[change.indicator]?.name}</td><td className="muted">{format(change.before)}</td><td>{format(change.after)}</td><td><Delta value={change.delta} /></td></tr>)}</tbody></table>{changes.length === 0 && <p className="empty-table">В этом районе показатели не изменились.</p>}</div></section>
-    <div className="results-grid lower-results"><section className="panel"><PanelTitle eyebrow="ПРОЗРАЧНЫЙ РАСЧЁТ" title="Вклад ваших мероприятий" /><div className="contributions">{result.measure_contributions.map(measure => <details key={measure.measure_id}><summary><span className="table-code">{measure.measure_id}</span><div><strong>{measure.name}</strong><small>{measure.district ?? 'Все районы'} · {measure.cost} ед. · учтено {format(measure.effect_share * 100, 1)}% полного эффекта</small></div><PlusIndicator /></summary><div className="contribution-effects">{Object.entries(measure.effects_by_district).map(([name, effects]) => <div key={name}><span>{name}</span><div className="effect-chips">{Object.entries(effects).map(([indicator, value]) => <span key={indicator} className={value < 0 ? 'negative-effect' : ''}>{indicator} {signed(value)}</span>)}</div></div>)}</div></details>)}</div></section><section className="panel"><PanelTitle eyebrow="СОЧЕТАНИЯ И ОГРАНИЧЕНИЯ" title="Что важно учесть" /><div className="result-notes">{result.synergies.map((synergy, index) => <div className="result-note" key={index}><Check size={17} /><div><strong>{synergy.measures.join(' + ')} · {synergy.district}</strong><p>{Object.entries(synergy.effects).map(([id, value]) => `${id} ${signed(value)}`).join(', ')} — дополнительный эффект синергии.</p></div></div>)}{result.synergies.length === 0 && <p className="muted small">В этом плане нет сочетаний с дополнительной синергией.</p>}{result.critical.remaining.map(c => <div className="result-note warning-note" key={`${c.district}-${c.indicator}`}><CircleAlert size={17} /><div><strong>{c.district} · {c.indicator}</strong><p>{context.indicators[c.indicator]?.name}: {format(c.value)} — ниже критического порога.</p></div></div>)}{result.critical.after === 0 && <div className="result-note"><Check size={17} /><div><strong>Критических показателей не осталось</strong><p>Во всех районах значения достигли порога {context.constraints.critical_threshold} или выше.</p></div></div>}<div className="result-note neutral-note"><Wallet size={17} /><div><strong>Остаток бюджета: {result.budget.remaining} ед.</strong><p>Неиспользованный бюджет не добавляет баллов к Score.</p></div></div></div></section></div>
-    <section className="panel comparison-panel"><PanelTitle eyebrow="ПРОВЕРЯЙТЕ АЛЬТЕРНАТИВЫ" title="Сравнение с предыдущим планом" right={<GitCompareArrows size={21} />} />{previous ? <><p className="muted small">A — предыдущий рассчитанный план. B — текущий. Изменения показывают разницу B − A.</p><button className="button secondary" onClick={compare} disabled={comparing}>{comparing ? 'Сравниваем…' : 'Сравнить планы'}<GitCompareArrows size={16} /></button>{compareError && <ErrorNotice message={compareError} retry={compare} />}{comparison?.valid && <div className="comparison-results"><div className="comparison-summary"><div><span>Score A → B</span><strong>{format(comparison.score.a)} → {format(comparison.score.b)}</strong><Delta value={comparison.score.delta} /></div><div><span>Бюджет A → B</span><strong>{comparison.budget.a} → {comparison.budget.b}</strong></div><div><span>Критические показатели</span><strong>{comparison.critical.count_a} → {comparison.critical.count_b}</strong></div></div><div className="district-deltas">{Object.entries(comparison.districts).map(([name, d]) => <div key={name}><span>{name}</span><Delta value={d.delta} /></div>)}</div></div>}</> : <p className="muted">Рассчитайте ещё один план. Этот результат сохранится для сравнения.</p>}</section>
-  </div>
-}
 
-function PlusIndicator() { return <span className="expand-mark" aria-hidden="true">+</span> }
+  if (!result) {
+    return (
+      <Empty
+        title="Здесь появится результат вашей стратегии"
+        action={
+          <button className="button primary" onClick={edit}>
+            Собрать 5 решений в конструкторе <ArrowRight size={17} />
+          </button>
+        }
+      >
+        Выберите пять городских мероприятий и запустите расчёт. Детерминированный симулятор города посчитает итоговый Astana Quality of Life Score.
+      </Empty>
+    )
+  }
+
+  // Data for district comparison bar chart
+  const districtChartData = Object.entries(result.districts).map(([name, d]) => ({
+    name,
+    'До': d.score.before,
+    'После': d.score.after,
+  }))
+
+  // Data for 5-axis Radar chart
+  const domainData = calculateDomainScores(context, result).map(item => ({
+    subject: item.domain,
+    'Базовый': item.before,
+    'После мер': item.after,
+    fullMark: 100,
+  }))
+
+  const changes = result.indicator_changes.filter(
+    c => c.delta !== 0 && (districtFilter === 'Все районы' || c.district === districtFilter)
+  )
+
+  async function compare() {
+    setComparing(true)
+    setCompareError(null)
+    try {
+      setComparison(
+        await request<Comparison>('/compare', {
+          scenario_a: previous!.decisions,
+          scenario_b: result!.decisions,
+        })
+      )
+    } catch (e) {
+      setCompareError(errorText(e))
+    } finally {
+      setComparing(false)
+    }
+  }
+
+  return (
+    <div className="page-enter">
+      <div className="page-heading">
+        <div>
+          <div className="eyebrow">СИТУАЦИОННЫЙ ЦЕНТР · РЕЗУЛЬТАТ СТРАТЕГИИ НА {context.horizon} КВАРТАЛОВ</div>
+          <h1>Оценка качества жизни Астаны</h1>
+          <p>Детерминированный расчёт формулы AQLS и глубокий AI-анализ компромиссов.</p>
+        </div>
+        <div className="heading-actions">
+          <button className="button secondary" onClick={edit}>
+            <ArrowLeft size={16} /> Изменить решения
+          </button>
+          {go && (
+            <>
+              <button className="button secondary" onClick={() => go('crisis')}>
+                <Flame size={16} /> Проверить кризисом
+              </button>
+              <button className="button primary" onClick={() => go('pitch')}>
+                <Presentation size={16} /> Доклад Акиму
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Main Score Banner */}
+      <section className="result-banner">
+        <div>
+          <div className="hero-tag">
+            <span /> ASTANA QUALITY OF LIFE SCORE (AQLS)
+          </div>
+          <div className="result-score">
+            <span>{format(result.score.before)}</span>
+            <ArrowRight size={32} />
+            <strong data-testid="result-score">{format(result.score.after)}</strong>
+            <Delta value={result.score.delta} />
+          </div>
+          <p className="score-explainer">
+            Индекс учитывает средний балл столицы, показатель отстающего района (<strong>{result.weakest_district.after}</strong>) и штрафы за критические показатели ниже {context.constraints.critical_threshold} баллов.
+          </p>
+        </div>
+        <div className="result-seal">
+          <Target size={38} strokeWidth={1.2} />
+          <span>СТРАТЕГИЯ ПРОВЕРЕНА</span>
+          <strong>{result.decisions.length} решений</strong>
+          <small>{result.critical.after === 0 ? 'Все критические зоны устранены!' : `Осталось критических: ${result.critical.after}`}</small>
+        </div>
+      </section>
+
+      {/* Stats Cards */}
+      <section className="stats-grid result-stats">
+        <Stat
+          label="Использовано бюджета"
+          value={<>{result.budget.used}<span>/ {result.budget.total}</span></>}
+          caption={`Остаток: ${result.budget.remaining} ед.`}
+          icon={<Wallet size={19} />}
+        />
+        <Stat
+          label="Критические показатели"
+          value={
+            <>
+              <span className="before-value">{result.critical.before}</span>
+              <ArrowRight size={20} />
+              <span className={result.critical.after === 0 ? 'text-green' : 'text-amber'}>{result.critical.after}</span>
+            </>
+          }
+          caption={result.critical.after === 0 ? 'Успех: 0 показателей ниже 40 баллов' : 'Требуют внимания в следующем цикле'}
+          icon={<CircleAlert size={19} />}
+          tone={result.critical.after ? 'attention' : 'featured'}
+        />
+        <Stat
+          label="Самый слабый район"
+          value={<span className="name-value">{result.weakest_district.after}</span>}
+          caption={`Оценка района: ${format(result.after.minimum, 1)}`}
+          icon={<MapPin size={19} />}
+        />
+        <Stat
+          label="Активные синергии"
+          value={<span className="synergy-val">{result.synergies.length}</span>}
+          caption="Дополнительные эффекты от связок мер"
+          icon={<Zap size={19} />}
+          tone="featured"
+        />
+      </section>
+
+      {/* Visual Analytics Grid: Radar Chart + District Bars */}
+      <div className="results-grid analytics-double">
+        {/* 5-Axis Radar Chart */}
+        <section className="panel chart-panel">
+          <PanelTitle
+            eyebrow="5 НАПРАВЛЕНИЙ РАЗВИТИЯ"
+            title="Радарный баланс города (Radar Chart)"
+          />
+          <p className="small muted" style={{ marginTop: -14, marginBottom: 12 }}>
+            Сравнение средних показателей города по 5 обязательным направлениям ТЗ:
+          </p>
+          <div className="radar-container" role="img" aria-label="Радарная диаграмма баланса 5 направлений города">
+            <ResponsiveContainer width="100%" height={290}>
+              <RadarChart cx="50%" cy="50%" outerRadius="75%" data={domainData}>
+                <PolarGrid stroke="#e2e8f0" />
+                <PolarAngleAxis dataKey="subject" tick={{ fill: '#334155', fontSize: 12, fontWeight: 500 }} />
+                <PolarRadiusAxis domain={[0, 100]} angle={30} tick={{ fill: '#94a3b8', fontSize: 10 }} />
+                <Radar
+                  name="Базовый уровень"
+                  dataKey="Базовый"
+                  stroke="#94a3b8"
+                  fill="#94a3b8"
+                  fillOpacity={0.25}
+                />
+                <Radar
+                  name="После вашей стратегии"
+                  dataKey="После мер"
+                  stroke="#059669"
+                  fill="#10b981"
+                  fillOpacity={0.45}
+                />
+                <Legend iconType="circle" wrapperStyle={{ fontSize: 12, paddingTop: 10 }} />
+                <Tooltip
+                  contentStyle={{ background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: 8, fontSize: 12 }}
+                  formatter={(val: unknown) => `${format(Number(val), 1)} баллов`}
+                />
+              </RadarChart>
+            </ResponsiveContainer>
+          </div>
+        </section>
+
+        {/* District Comparison Bar Chart */}
+        <section className="panel chart-panel">
+          <PanelTitle
+            eyebrow="ДЕТАЛИЗАЦИЯ ПО РАЙОНАМ"
+            title="Оценки районов: До и После"
+          />
+          <div className="chart-container" role="img" aria-label="Сравнение оценок районов">
+            <ResponsiveContainer width="100%" height={270}>
+              <BarChart data={districtChartData} margin={{ top: 14, right: 10, bottom: 0, left: -20 }} barGap={6}>
+                <CartesianGrid strokeDasharray="3 6" vertical={false} stroke="#f1f5f9" />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#475569', fontSize: 12 }} />
+                <YAxis domain={[0, 100]} axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 11 }} />
+                <Tooltip
+                  cursor={{ fill: '#f8fafc' }}
+                  contentStyle={{ border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 12 }}
+                  formatter={value => format(Number(value), 1)}
+                />
+                <Legend iconType="circle" wrapperStyle={{ fontSize: 12, paddingTop: 10 }} />
+                <Bar isAnimationActive={false} dataKey="До" fill="#cbd5e1" radius={[4, 4, 0, 0]} maxBarSize={32} />
+                <Bar isAnimationActive={false} dataKey="После" fill="#059669" radius={[4, 4, 0, 0]} maxBarSize={32} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="district-deltas">
+            {Object.entries(result.districts).map(([name, data]) => (
+              <div key={name}>
+                <span>{name}</span>
+                <Delta value={data.score.delta} />
+              </div>
+            ))}
+          </div>
+        </section>
+      </div>
+
+      {/* AI Supervisor Section */}
+      <section className="panel ai-panel">
+        <PanelTitle
+          eyebrow="ИНТЕЛЛЕКТУАЛЬНЫЙ АНАЛИЗ"
+          title="Вердикт AI Supervisor: сильные стороны, риски и компромиссы"
+          right={<Sparkles size={22} className="text-emerald" />}
+        />
+        {analyzing ? (
+          <Loading>AI Supervisor анализирует последствия принятых решений…</Loading>
+        ) : analysis?.available ? (
+          <div className="analysis-text">{analysis.explanation}</div>
+        ) : (
+          <div className="ai-unavailable">
+            <div className="icon-tile green"><Sparkles size={24} /></div>
+            <div>
+              <h3>AI-объяснение готово к генерации</h3>
+              <p>{analysis?.message ?? 'Запросите разбор эффектов, компромиссов и потенциальных рисков текущего портфеля мер.'}</p>
+              <button className="button secondary" onClick={analyze}>
+                <RefreshCw size={15} /> {analysis ? 'Повторить запрос к модели' : 'Сформировать экспертное заключение'}
+              </button>
+            </div>
+          </div>
+        )}
+        <div className="ai-actions-bar">
+          <button className="button secondary" onClick={advisor}>
+            Задать вопрос советнику в чате <ArrowUpRight size={16} />
+          </button>
+        </div>
+      </section>
+
+      {/* Indicator Changes Table */}
+      <section className="panel">
+        <PanelTitle
+          eyebrow="ДЕТАЛЬНАЯ ВЕРИФИКАЦИЯ"
+          title="Сдвиг ключевых показателей города"
+          right={
+            <select
+              className="input compact"
+              aria-label="Фильтр по району"
+              value={districtFilter}
+              onChange={e => setDistrictFilter(e.target.value)}
+            >
+              <option>Все районы</option>
+              {context.districts.map(d => (
+                <option key={d.name}>{d.name}</option>
+              ))}
+            </select>
+          }
+        />
+        <div className="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Район</th>
+                <th>Показатель</th>
+                <th>Направление</th>
+                <th>До</th>
+                <th>После</th>
+                <th>Изменение</th>
+              </tr>
+            </thead>
+            <tbody>
+              {changes.map(change => (
+                <tr key={`${change.district}-${change.indicator}`}>
+                  <td><strong>{change.district}</strong></td>
+                  <td>
+                    <span className="table-code">{change.indicator}</span>
+                    {context.indicators[change.indicator]?.name}
+                  </td>
+                  <td><span className="muted">{context.indicators[change.indicator]?.direction}</span></td>
+                  <td className="muted">{format(change.before)}</td>
+                  <td><strong>{format(change.after)}</strong></td>
+                  <td><Delta value={change.delta} /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {changes.length === 0 && <p className="empty-table">В выбранном фильтре изменений нет.</p>}
+        </div>
+      </section>
+
+      {/* Synergies & Contributions */}
+      <div className="results-grid lower-results">
+        <section className="panel">
+          <PanelTitle eyebrow="ПРОЗРАЧНОСТЬ РАСЧЁТА" title="Вклад каждого выбранного мероприятия" />
+          <div className="contributions">
+            {result.measure_contributions.map(measure => (
+              <details key={measure.measure_id}>
+                <summary>
+                  <span className="table-code">{measure.measure_id}</span>
+                  <div>
+                    <strong>{measure.name}</strong>
+                    <small>
+                      {measure.district ?? 'Все районы'} · {measure.cost} ед. бюджета · учтено {format(measure.effect_share * 100, 0)}% эффекта (лаг {measure.lag} кв.)
+                    </small>
+                  </div>
+                  <span className="expand-mark">+</span>
+                </summary>
+                <div className="contribution-effects">
+                  {Object.entries(measure.effects_by_district).map(([name, effects]) => (
+                    <div key={name}>
+                      <span>{name}:</span>
+                      <div className="effect-chips">
+                        {Object.entries(effects).map(([indicator, value]) => (
+                          <span key={indicator} className={value < 0 ? 'negative-effect' : ''}>
+                            {indicator} {signed(value)}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </details>
+            ))}
+          </div>
+        </section>
+
+        <section className="panel">
+          <PanelTitle eyebrow="СИНЕРГИИ И ОГРАНИЧЕНИЯ" title="Сработавшие сочетания мер" />
+          <div className="result-notes">
+            {result.synergies.map((synergy, index) => (
+              <div className="result-note synergy-note" key={index}>
+                <Zap size={18} className="text-emerald" />
+                <div>
+                  <strong>{synergy.measures.join(' + ')} · {synergy.district}</strong>
+                  <p>
+                    {Object.entries(synergy.effects)
+                      .map(([id, value]) => `${id} ${signed(value)}`)
+                      .join(', ')} — получен дополнительный мультипликативный эффект!
+                  </p>
+                </div>
+              </div>
+            ))}
+
+            {result.synergies.length === 0 && (
+              <p className="muted small">В текущей комбинации нет активированных синергий.</p>
+            )}
+
+            {result.critical.remaining.map(c => (
+              <div className="result-note warning-note" key={`${c.district}-${c.indicator}`}>
+                <CircleAlert size={18} />
+                <div>
+                  <strong>{c.district} · {c.indicator} ({context.indicators[c.indicator]?.name})</strong>
+                  <p>Значение {format(c.value)} всё ещё ниже критического порога {context.constraints.critical_threshold}.</p>
+                </div>
+              </div>
+            ))}
+
+            {result.critical.after === 0 && (
+              <div className="result-note success-note">
+                <Check size={18} />
+                <div>
+                  <strong>Критических точек не осталось</strong>
+                  <p>Все индикаторы во всех 5 районах превышают порог {context.constraints.critical_threshold} баллов.</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+      </div>
+
+      {/* Comparison with previous plan */}
+      <section className="panel comparison-panel">
+        <PanelTitle
+          eyebrow="БЕНЧМАРКИНГ СЦЕНАРИЕВ"
+          title="Сравнение с предыдущей версией вашего плана"
+          right={<GitCompareArrows size={21} />}
+        />
+        {previous ? (
+          <>
+            <p className="muted small">
+              План A — предыдущий запуск. План B — текущий портфель решений.
+            </p>
+            <button className="button secondary" onClick={compare} disabled={comparing}>
+              {comparing ? 'Сравниваем…' : 'Сравнить оба плана'}{' '}
+              <GitCompareArrows size={16} />
+            </button>
+            {compareError && <ErrorNotice message={compareError} retry={compare} />}
+            {comparison?.valid && (
+              <div className="comparison-results">
+                <div className="comparison-summary">
+                  <div>
+                    <span>Score A → B</span>
+                    <strong>{format(comparison.score.a)} → {format(comparison.score.b)}</strong>
+                    <Delta value={comparison.score.delta} />
+                  </div>
+                  <div>
+                    <span>Бюджет A → B</span>
+                    <strong>{comparison.budget.a} → {comparison.budget.b} ед.</strong>
+                  </div>
+                  <div>
+                    <span>Критические зоны</span>
+                    <strong>{comparison.critical.count_a} → {comparison.critical.count_b}</strong>
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          <p className="muted">
+            Измените решения в конструкторе и рассчитайте повторно — система автоматически включит режим сравнения версий.
+          </p>
+        )}
+      </section>
+    </div>
+  )
+}

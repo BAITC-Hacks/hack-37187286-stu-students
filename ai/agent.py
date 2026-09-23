@@ -57,9 +57,9 @@ class ChatCompletionsProvider:
     async def complete(self, messages: list[dict[str, Any]], tool_choice: str) -> dict[str, Any]:
         payload = {"model": self.model, "messages": messages, "tools": TOOL_SCHEMAS,
                    "tool_choice": tool_choice, "response_format": {"type": "json_object"}}
-        # GPT-5.6 Chat Completions rejects function tools with reasoning enabled.
+        # GPT-5.6 and GPT-6 Chat Completions reject function tools with reasoning enabled.
         # Keep other providers/models unchanged; they may not accept this option.
-        if self.model == "gpt-5.6" or self.model.startswith("gpt-5.6-"):
+        if self.model in ("gpt-5.6", "gpt-6") or self.model.startswith(("gpt-5.6-", "gpt-6-")):
             payload["reasoning_effort"] = "none"
         async with httpx.AsyncClient(timeout=httpx.Timeout(25.0, connect=5.0)) as client:
             response = await client.post(

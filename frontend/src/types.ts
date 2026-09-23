@@ -1,4 +1,4 @@
-export interface Decision { measure_id: string; district: string | null }
+export interface Decision { measure_id: string; district?: string | null }
 export interface Measure {
   id: string; name: string; direction: string; scope: 'district' | 'city'
   cost: number; lag: number; effects: Record<string, number>
@@ -55,4 +55,50 @@ export interface AgentResponse {
 }
 export interface Analysis { available: boolean; explanation: string | null; message?: string }
 export interface ChatMessage { role: 'user' | 'assistant'; content: string; response?: AgentResponse }
-export type Page = 'overview' | 'builder' | 'results' | 'advisor'
+export type Page = 'overview' | 'builder' | 'results' | 'advisor' | 'crisis' | 'leaderboard' | 'pitch'
+
+export interface DomainScoreItem {
+  domain: string
+  before: number
+  after: number
+  delta: number
+}
+
+export interface CityCrisis {
+  id: string
+  title: string
+  badge: string
+  severity: 'high' | 'extreme' | 'critical'
+  iconName: string
+  description: string
+  historicalNote: string
+  shockEffects: Record<string, number> // indicator -> negative shock
+  mitigatingMeasures: string[] // measure IDs that cushion the shock
+}
+
+export interface CrisisEvaluation {
+  crisis: CityCrisis
+  resilienceScore: number // 0 - 100%
+  scoreWithShock: number
+  originalScore: number
+  shockDelta: number
+  protectedPoints: number
+  activeMitigations: string[]
+  unmitigatedShocks: { indicator: string; shock: number }[]
+  verdict: 'high' | 'medium' | 'vulnerable'
+  verdictText: string
+}
+
+export interface TeamEntry {
+  id: string
+  teamName: string
+  strategyName: string
+  timestamp: number
+  decisions: Decision[]
+  score: number
+  scoreDelta: number
+  budgetUsed: number
+  criticalRemaining: number
+  synergiesCount: number
+}
+
