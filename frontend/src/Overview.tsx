@@ -1,6 +1,12 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import * as maplibregl from 'maplibre-gl'
+import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url'
+
+// Tell MapLibre to use the bundled worker in Vite
+if (typeof (maplibregl as unknown as { setWorkerUrl?: (url: string) => void }).setWorkerUrl === 'function') {
+  (maplibregl as unknown as { setWorkerUrl: (url: string) => void }).setWorkerUrl(workerUrl)
+}
 import {
   ArrowRight,
   ArrowUpRight,
@@ -138,16 +144,21 @@ export default function Overview({
     if (!mapContainerRef.current) return
     if (mapRef.current) return
 
-    const style = createAstanaMapStyle('/api/tiles/{z}/{x}/{y}.pbf')
+    const tileUrl = `${window.location.origin}/api/tiles/{z}/{x}/{y}.pbf`
+    const style = createAstanaMapStyle(tileUrl)
     const map = new maplibregl.Map({
       container: mapContainerRef.current,
       style,
       center: ASTANA_CENTER,
-      zoom: 11,
-      minZoom: 9.5,
-      maxZoom: 14,
       maxBounds: ASTANA_BOUNDS,
+      zoom: 11,
+      minZoom: 9,
+      maxZoom: 14.5,
       attributionControl: false,
+    })
+
+    requestAnimationFrame(() => {
+      map.resize()
     })
 
     map.on('zoom', () => {
@@ -475,27 +486,29 @@ export default function Overview({
 
           <div className="city-panel-body">
             {/* Real OpenStreetMap Vector Tile Map via MapLibre GL */}
-            <div className="map-wrap gis-viewport">
-              {/* Floating Map Navigation Controls */}
-              <div className="gis-floating-controls no-print">
-                <button className="gis-control-btn" onClick={handleZoomIn} title="Увеличить (Zoom In)">
-                  <ZoomIn size={16} />
-                </button>
-                <span className="gis-zoom-indicator">z{zoomLevel}</span>
-                <button className="gis-control-btn" onClick={handleZoomOut} title="Уменьшить (Zoom Out)">
-                  <ZoomOut size={16} />
-                </button>
-                <button className="gis-control-btn" onClick={handleResetView} title="Центр Астаны">
-                  <RotateCcw size={15} />
-                </button>
-              </div>
+            <div className="map-wrap">
+              <div className="gis-viewport">
+                {/* Floating Map Navigation Controls */}
+                <div className="gis-floating-controls no-print">
+                  <button className="gis-control-btn" onClick={handleZoomIn} title="Увеличить (Zoom In)">
+                    <ZoomIn size={16} />
+                  </button>
+                  <span className="gis-zoom-indicator">z{zoomLevel}</span>
+                  <button className="gis-control-btn" onClick={handleZoomOut} title="Уменьшить (Zoom Out)">
+                    <ZoomOut size={16} />
+                  </button>
+                  <button className="gis-control-btn" onClick={handleResetView} title="Центр Астаны">
+                    <RotateCcw size={15} />
+                  </button>
+                </div>
 
-              {/* MapLibre GL WebGL Map Container */}
-              <div ref={mapContainerRef} className="gis-map-canvas" />
+                {/* MapLibre GL WebGL Map Container */}
+                <div ref={mapContainerRef} className="gis-map-canvas" />
 
-              {/* Map Status Badge */}
-              <div className="gis-map-badge-status">
-                OSM АСТАНА · ВЕКТОРНЫЕ ТАЙЛЫ MBTILES · СЛОЙ: {activeLayer.toUpperCase()}
+                {/* Map Status Badge */}
+                <div className="gis-map-badge-status">
+                  OSM АСТАНА · ВЕКТОРНЫЕ ТАЙЛЫ MBTILES · СЛОЙ: {activeLayer.toUpperCase()}
+                </div>
               </div>
 
               {/* Bottom Heatmap Gradient Key */}
