@@ -1,6 +1,7 @@
 """One bounded tool-calling supervisor. All arithmetic lives in deterministic tools."""
 import asyncio
 import json
+import logging
 import os
 from pathlib import Path
 from typing import Any, Protocol
@@ -54,13 +55,28 @@ class ChatCompletionsProvider:
         self.api_key, self.model, self.base_url = api_key, model, base_url.rstrip("/")
 
     async def complete(self, messages: list[dict[str, Any]], tool_choice: str) -> dict[str, Any]:
+        payload = {"model": self.model, "messages": messages, "tools": TOOL_SCHEMAS,
+                   "tool_choice": tool_choice, "response_format": {"type": "json_object"}}
+        # GPT-5.6 Chat Completions rejects function tools with reasoning enabled.
+        # Keep other providers/models unchanged; they may not accept this option.
+        if self.model == "gpt-5.6" or self.model.startswith("gpt-5.6-"):
+            payload["reasoning_effort"] = "none"
         async with httpx.AsyncClient(timeout=httpx.Timeout(25.0, connect=5.0)) as client:
             response = await client.post(
                 f"{self.base_url}/chat/completions",
                 headers={"Authorization": f"Bearer {self.api_key}"},
-                json={"model": self.model, "messages": messages, "tools": TOOL_SCHEMAS,
-                      "tool_choice": tool_choice, "response_format": {"type": "json_object"}},
+                json=payload,
             )
+            if not response.is_success:
+                # Never log credentials, URLs, payloads, or provider error bodies.
+                logging.getLogger(__name__).warning(
+                    "LLM provider_response_received=True provider_http_ok=False "
+                    "bad_request=%s unauthorized=%s forbidden=%s "
+                    "not_found=%s rate_or_quota_limited=%s server_error=%s",
+                    response.status_code == 400, response.status_code == 401,
+                    response.status_code == 403, response.status_code == 404,
+                    response.status_code == 429, response.is_server_error,
+                )
             response.raise_for_status()
             return response.json()["choices"][0]["message"]
 
