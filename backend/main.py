@@ -16,9 +16,11 @@ from ai.simulator import simulate  # noqa: E402
 from ai.validator import validate_plan  # noqa: E402
 from backend.agent_schemas import AnalysisResponse, ChatRequest, ChatResponse, CompareRequest, SearchRequest  # noqa: E402
 from backend.schemas import Plan, SimulationResult, ValidationResult  # noqa: E402
+from backend.tiles import router as tiles_router  # noqa: E402
 
 app = FastAPI(title="Аким на 5 часов · Urban Strategy Copilot", version="1.0.0",
               description="Синтетическая модель города. Числа считает Python; один AI Supervisor выбирает tools и объясняет результаты.")
+app.include_router(tiles_router)
 
 
 @app.get("/api/health")

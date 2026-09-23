@@ -253,3 +253,714 @@
 .gis-fullscreen .city-panel-body{flex:1;min-height:0}
 .gis-fullscreen .gis-viewport{flex:1;height:100%}
 .gis-fullscreen .gis-svg{max-height:none;height:100%}
+
+/* ========================================
+   MISSING CSS CLASSES — P0 FIX
+   ======================================== */
+
+/* Heading Actions (used in every page) */
+.heading-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+/* Direction Tracker Bar (Builder) */
+.direction-tracker-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 20px;
+  margin-bottom: 22px;
+  flex-wrap: wrap;
+}
+.tracker-label {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 9px;
+  font-weight: 650;
+  letter-spacing: .08em;
+  color: #7b8a6f;
+  min-width: 150px;
+}
+.tracker-label small {
+  font-weight: 400;
+  letter-spacing: 0;
+}
+.tracker-chips {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  flex: 1;
+}
+.tracker-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 7px;
+  border: 1px solid #e4e9dc;
+  background: #f8faf4;
+  font-size: 10px;
+  transition: all .2s;
+}
+.tracker-chip.active {
+  background: #eef5e4;
+  border-color: #c5d9ad;
+  color: #5a7c45;
+}
+.tracker-chip.full {
+  background: #e4f0d8;
+  border-color: #b4d098;
+  color: #4a7037;
+}
+.tracker-chip.over {
+  background: #fceee8;
+  border-color: #e8c0af;
+  color: #b95349;
+}
+.tracker-chip.zero {
+  background: #f5f6f2;
+  border-color: #e8ecdf;
+  color: #b0baa4;
+}
+.tracker-icon {
+  display: flex;
+  align-items: center;
+}
+.tracker-name {
+  font-weight: 500;
+  font-size: 11px;
+}
+.tracker-count {
+  font-size: 11px;
+  margin-left: 2px;
+}
+
+/* Synergy Tag (Builder measure cards) */
+.synergy-tag {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 500;
+  margin-bottom: 6px;
+}
+.synergy-tag.ready {
+  background: #f0f5e8;
+  border: 1px solid #d8e8c4;
+  color: #7a9c5e;
+}
+.synergy-tag.active {
+  background: #e4f0d6;
+  border: 1px solid #b8d89e;
+  color: #4f7837;
+}
+
+/* Builder Controls & Search */
+.builder-controls {
+  margin-bottom: 4px;
+}
+.search-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #dce3d6;
+  border-radius: 8px;
+  padding: 10px 14px;
+  background: #fff;
+  margin-bottom: 14px;
+  color: #7d8b7c;
+}
+.search-field input {
+  border: 0;
+  background: none;
+  outline: none;
+  width: 100%;
+  min-width: 0;
+  font-size: 12px;
+  color: #4e6250;
+}
+.search-field input::placeholder {
+  color: #a8b59d;
+}
+.clear-search {
+  border: 0;
+  background: none;
+  color: #a0ac94;
+  font-size: 16px;
+  padding: 0 2px;
+  cursor: pointer;
+  line-height: 1;
+}
+.clear-search:hover {
+  color: #6e7d64;
+}
+
+/* Topbar Status Bar */
+.topbar-status-bar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.topbar-balance-dots {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.domain-mini-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  transition: background-color .2s;
+}
+.domain-mini-dot.empty {
+  background: #dce3d6;
+}
+.domain-mini-dot.filled {
+  box-shadow: 0 0 4px rgba(0, 0, 0, .12);
+}
+.topbar-budget-pill {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 500;
+  color: #7d8b7c;
+  background: #f3f6ee;
+  padding: 5px 10px;
+  border-radius: 5px;
+  border: 1px solid #e4e9dc;
+}
+
+/* Domains Strip (Overview) */
+.domains-strip {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 22px;
+}
+.domain-card {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 14px 16px;
+}
+.domain-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 7px;
+}
+.domain-icon {
+  display: flex;
+  align-items: center;
+}
+.domain-card strong {
+  font-size: 12px;
+  font-weight: 600;
+}
+.domain-sub {
+  font-size: 9px;
+  color: #9aa68e;
+  line-height: 1.6;
+}
+
+/* Hero Buttons (Overview) */
+.hero-buttons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* Map Layer Selector (Overview GIS) */
+.map-layer-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.map-layer-selector select {
+  appearance: none;
+  background: #fff;
+  border: 1px solid #dce3d6;
+  border-radius: 6px;
+  padding: 7px 28px 7px 10px;
+  font-size: 11px;
+  color: #4e6250;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%237d8b7c' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+}
+
+/* Heat Legend (Overview map) */
+.heat-legend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 8px;
+  color: #a6b099;
+}
+.heat-bar {
+  width: 80px;
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(to right, #fca5a5, #fed7aa, #bbf7d0, #86efac);
+}
+.key-active {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 9px;
+  color: #7d8d76;
+}
+.key-active .green-dot {
+  width: 6px;
+  height: 6px;
+}
+
+/* Crit Badge (Overview district tabs) */
+.crit-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 700;
+  color: #d97706;
+  background: #fef3c7;
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  margin-left: 3px;
+}
+
+/* Color Utility Classes */
+.text-emerald { color: #059669; }
+.text-cyan { color: #0891b2; }
+.text-purple { color: #7c3aed; }
+.text-green { color: #16a34a; }
+.text-amber { color: #d97706; }
+
+/* Calculate Button (Builder) */
+.calculate-btn {
+  font-size: 13px;
+  min-height: 46px;
+  letter-spacing: -.01em;
+}
+
+/* AI Actions Bar (Results) */
+.ai-actions-bar {
+  border-top: 1px solid #e8eddf;
+  padding-top: 16px;
+  margin-top: 18px;
+  display: flex;
+  gap: 10px;
+}
+
+/* Radar Container (Results) */
+.radar-container {
+  margin-top: 5px;
+}
+
+/* Chart Panel (Results) */
+.chart-panel {
+  padding: 23px;
+}
+
+/* Analytics Double grid override */
+.analytics-double {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+/* Score Explainer (Results banner) */
+.score-explainer {
+  font-size: 11px;
+  color: #91af8b;
+  max-width: 560px;
+  margin-top: 14px;
+  line-height: 1.7;
+}
+
+/* Synergy Val (Results stats) */
+.synergy-val {
+  color: #527c59;
+}
+
+/* Nav Crisis Tag */
+.nav-crisis-tag {
+  font-size: 7px;
+  background: #fef3c7;
+  color: #b45309;
+  padding: 2px 5px;
+  border-radius: 3px;
+  margin-left: auto;
+  letter-spacing: .02em;
+  font-weight: 600;
+}
+
+/* Meta Cost highlight (Builder) */
+.meta-cost {
+  font-weight: 600;
+  color: #7a8e6c;
+}
+
+/* Crisis Selection Grid */
+.crisis-selection-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.crisis-selector-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 20px;
+  cursor: pointer;
+  transition: all .2s;
+}
+.crisis-selector-card:hover {
+  border-color: #94a3b8;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, .06);
+}
+.crisis-selector-card.selected {
+  border-color: #059669;
+  box-shadow: 0 0 0 2px #05966922;
+  background: #f0fdf4;
+}
+
+/* Crisis Badge */
+.crisis-badge {
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  color: #475569;
+  text-transform: uppercase;
+}
+
+/* Severity Tag */
+.severity-tag {
+  font-size: 9px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+.severity-tag.critical {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+.severity-tag.high {
+  background: #fef3c7;
+  color: #b45309;
+}
+.severity-tag.extreme {
+  background: #fce7f3;
+  color: #9d174d;
+}
+
+/* Crisis Card Header */
+.crisis-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 14px 0 10px;
+}
+.crisis-card-header h3 {
+  font-size: 14px;
+  color: #0f172a;
+  line-height: 1.4;
+}
+
+/* Crisis Report Panel */
+.crisis-report-panel {
+  padding: 24px;
+}
+
+/* Crisis Sidebar */
+.crisis-sidebar {
+  padding: 24px;
+}
+
+/* Defense Breakdown */
+.defense-breakdown {
+  margin-top: 20px;
+}
+.defense-breakdown h4 {
+  font-size: 13px;
+  color: #334155;
+  margin-bottom: 10px;
+}
+
+/* Verdict Icon */
+.verdict-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+}
+
+/* Responsive fix for crisis */
+@media (max-width: 1000px) {
+  .crisis-selection-grid {
+    grid-template-columns: 1fr;
+  }
+  .crisis-arena-grid {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 580px) {
+  .domains-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .domains-strip .domain-card:last-child {
+    grid-column: span 2;
+  }
+  .direction-tracker-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 16px;
+  }
+  .tracker-chips {
+    gap: 6px;
+  }
+  .tracker-chip {
+    padding: 6px 8px;
+    font-size: 9px;
+  }
+  .heading-actions {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .heading-actions .button {
+    font-size: 10px;
+    padding: 8px 12px;
+    min-height: 34px;
+  }
+  .save-team-form {
+    grid-template-columns: 1fr;
+  }
+  .comparison-columns {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  .comp-districts-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .slide-passport-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .slide-analytics-row {
+    grid-template-columns: 1fr;
+  }
+  .slide-takeaways-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ==========================================================================
+   GIS MAPLIBRE & ASTANA OPENSTREETMAP INTERACTIVE MAP STYLES
+   ========================================================================== */
+.gis-top-toolbar { display: flex; align-items: center; gap: 10px; }
+.gis-viewport {
+  position: relative;
+  width: 70%;
+  height: 490px;
+  min-height: 440px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+}
+.gis-map-canvas {
+  width: 100%;
+  height: 100%;
+  outline: none;
+}
+.gis-floating-controls {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(8px);
+  padding: 6px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+.gis-control-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.gis-control-btn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+  border-color: #94a3b8;
+}
+.gis-zoom-indicator {
+  font-size: 10px;
+  font-weight: 700;
+  color: #475569;
+  text-align: center;
+  padding: 2px 0;
+}
+.gis-marker-badge {
+  cursor: pointer;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  user-select: none;
+}
+.gis-marker-badge:hover {
+  transform: translate(-50%, -50%) scale(1.08);
+  z-index: 20;
+}
+.gis-marker-inner {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border-radius: 8px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+  transition: all 0.2s;
+}
+.gis-marker-badge.active .gis-marker-inner {
+  background: #064e3b;
+  color: #ffffff;
+  border: 2px solid #10b981;
+  box-shadow: 0 6px 18px rgba(6, 78, 59, 0.35);
+}
+.gis-marker-badge:not(.active) .gis-marker-inner {
+  background: rgba(255, 255, 255, 0.94);
+  color: #0f172a;
+  border: 1.5px solid #cbd5e1;
+}
+.gis-marker-name {
+  font-size: 12px;
+  font-weight: 700;
+}
+.gis-marker-score {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.gis-marker-badge.active .gis-marker-score {
+  background: #047857;
+  color: #a7f3d0;
+}
+.gis-marker-badge:not(.active) .gis-marker-score {
+  background: #ecfdf5;
+  color: #059669;
+}
+.gis-marker-crit {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #ef4444;
+  color: #ffffff;
+  font-size: 9px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 6px rgba(239, 68, 68, 0.6);
+}
+.gis-marker-pop {
+  font-size: 10px;
+  font-weight: 600;
+  color: #334155;
+  background: rgba(255, 255, 255, 0.88);
+  padding: 1px 6px;
+  border-radius: 4px;
+  margin-top: 3px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+.gis-landmark-marker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  user-select: none;
+}
+.gis-landmark-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+}
+.gis-landmark-title {
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #1e293b;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #e2e8f0;
+  padding: 1px 6px;
+  border-radius: 4px;
+  margin-top: 3px;
+  white-space: nowrap;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+}
+.gis-fullscreen {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 9999 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  border-radius: 0 !important;
+  margin: 0 !important;
+  padding: 24px !important;
+  background: #ffffff !important;
+}
+.gis-fullscreen .gis-viewport {
+  height: calc(100vh - 120px) !important;
+  width: 76% !important;
+}
+.gis-map-badge-status {
+  position: absolute;
+  bottom: 12px;
+  left: 14px;
+  z-index: 10;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: #475569;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(6px);
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+}

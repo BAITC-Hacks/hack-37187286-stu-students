@@ -150,14 +150,17 @@ export default function Leaderboard({
     }
   }
 
+  const [loadError, setLoadError] = useState<string | null>(null)
+
   const loadTeamDecisions = async (team: TeamEntry) => {
+    setLoadError(null)
     try {
       const simulated = await request<Simulation>('/simulate', { decisions: team.decisions })
       if (simulated && simulated.valid) {
         apply(simulated)
       }
     } catch (e) {
-      alert(errorText(e))
+      setLoadError(errorText(e))
     }
   }
 
@@ -218,6 +221,8 @@ export default function Leaderboard({
           {savedSuccess && <div className="saved-success-msg"><Check size={16} /> Результат успешно добавлен в таблицу!</div>}
         </section>
       )}
+
+      {loadError && <ErrorNotice message={loadError} />}
 
       {/* Leaderboard Table */}
       <section className="panel">

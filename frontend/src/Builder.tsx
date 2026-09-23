@@ -385,7 +385,8 @@ export default function Builder({ context, decisions, setDecisions, validation, 
 
           <div className="selected-list">
             {decisions.map((decision, index) => {
-              const measure = context.measures.find(m => m.id === decision.measure_id)!
+              const measure = context.measures.find(m => m.id === decision.measure_id)
+              if (!measure) return null
               return (
                 <div className="selected-item" key={decision.measure_id}>
                   <span className="selection-index">{String(index + 1).padStart(2, '0')}</span>
