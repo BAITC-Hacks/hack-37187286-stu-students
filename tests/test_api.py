@@ -21,7 +21,7 @@ def test_context_and_health(client):
     assert len(state["measures"]) == 14
     assert len(state["baseline"]["critical"]) == 2
     assert state["constraints"]["decision_count"] == 5
-    assert state["constraints"]["max_per_direction"] == 2
+    assert state["constraints"]["max_per_direction"] == 1
     assert len(state["synergies"]) == 3
     assert all("same_district_only" in rule for rule in state["constraints"]["incompatibilities"])
 
@@ -32,8 +32,8 @@ def test_manual_flow_and_optional_ai(client):
     response = client.post("/api/simulate", json=plan)
     assert response.status_code == 200
     result = response.json()
-    assert result["budget"]["used"] == 95
-    assert result["critical"]["after"] == 0
+    assert result["budget"]["used"] == 93
+    assert result["critical"]["after"] == 1
     assert result["score"]["after"] > result["score"]["before"]
     explanation = client.post("/api/analyze", json=result)
     assert explanation.status_code == 200

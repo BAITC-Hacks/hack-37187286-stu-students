@@ -4,7 +4,7 @@
   "budget": 100,
   "horizon": 8,
   "decision_count": 5,
-  "max_per_direction": 2,
+  "max_per_direction": 1,
   "critical_threshold": 40,
   "indicators": {
     "T1": {"name": "Разгрузка дорог", "direction": "Транспорт", "weight": 0.10},
@@ -73,7 +73,7 @@
   ],
   "demo_plan": [
     {"measure_id": "M7", "district": "Нура"},
-    {"measure_id": "M8", "district": "Нура"},
+    {"measure_id": "M1", "district": "Нура"},
     {"measure_id": "M10", "district": "Нура"},
     {"measure_id": "M12", "district": null},
     {"measure_id": "M5", "district": "Сарыарка"}

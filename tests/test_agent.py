@@ -235,10 +235,10 @@ def test_advisor_can_select_search_tool(objective, focus):
 
 def test_compare_tool_is_available_to_supervisor():
     other = [dict(item) for item in DEMO_PLAN]
-    next(item for item in other if item["measure_id"] == "M8")["district"] = "Есиль"
+    next(item for item in other if item["measure_id"] == "M1")["district"] = "Есиль"
     provider = ScriptedProvider([
         tool_call("compare_scenarios", {"scenario_a": DEMO_PLAN, "scenario_b": other}),
-        final("Сравнение рассчитано инструментом; перенос поликлиники оставляет критический показатель в Нуре."),
+        final("Сравнение рассчитано инструментом; перенос выделенных полос оставляет критический показатель в Нуре."),
     ])
     response = asyncio.run(run_supervisor(ChatRequest(message="Сравни планы", decisions=other, previous_decisions=DEMO_PLAN), provider))
     assert response.available
@@ -361,7 +361,7 @@ def test_malformed_provider_messages_are_unavailable_not_exceptions(message):
 def test_analysis_is_locked_to_the_trusted_scenario():
     result = simulate(DEMO_PLAN)
     other = [dict(item) for item in DEMO_PLAN]
-    next(item for item in other if item["measure_id"] == "M8")["district"] = "Есиль"
+    next(item for item in other if item["measure_id"] == "M1")["district"] = "Есиль"
     provider = ScriptedProvider([tool_call("simulate_scenario", {"decisions": other})])
     response = asyncio.run(run_supervisor(ChatRequest(message="Объясни", decisions=DEMO_PLAN), provider, analysis_result=result))
     assert not response.available

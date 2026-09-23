@@ -5,13 +5,13 @@ GET http://127.0.0.1:8000/api/context
 POST http://127.0.0.1:8000/api/simulate
 Content-Type: application/json
 
-{"decisions":[{"measure_id":"M7","district":"Нура"},{"measure_id":"M8","district":"Нура"},{"measure_id":"M10","district":"Нура"},{"measure_id":"M12","district":null},{"measure_id":"M5","district":"Сарыарка"}]}
+{"decisions":[{"measure_id":"M1","district":"Нура"},{"measure_id":"M7","district":"Нура"},{"measure_id":"M10","district":"Нура"},{"measure_id":"M12","district":null},{"measure_id":"M5","district":"Сарыарка"}]}
 
-### B. Invalid: budget 109, no Score
+### B. Invalid: budget 107, no Score
 POST http://127.0.0.1:8000/api/simulate
 Content-Type: application/json
 
-{"decisions":[{"measure_id":"M7","district":"Нура"},{"measure_id":"M8","district":"Нура"},{"measure_id":"M10","district":"Нура"},{"measure_id":"M13","district":"Нура"},{"measure_id":"M5","district":"Сарыарка"}]}
+{"decisions":[{"measure_id":"M1","district":"Нура"},{"measure_id":"M7","district":"Нура"},{"measure_id":"M10","district":"Нура"},{"measure_id":"M13","district":"Нура"},{"measure_id":"M5","district":"Сарыарка"}]}
 
 ### C. Exact search within budget 90, no key required
 POST http://127.0.0.1:8000/api/search
@@ -37,8 +37,8 @@ Content-Type: application/json
 
 {"message":"Улучши Нуру"}
 
-### E. Compare placement of the health centre; deltas mean B - A
+### E. Compare placement of dedicated bus lanes; deltas mean B - A
 POST http://127.0.0.1:8000/api/compare
 Content-Type: application/json
 
-{"scenario_a":[{"measure_id":"M7","district":"Нура"},{"measure_id":"M8","district":"Нура"},{"measure_id":"M10","district":"Нура"},{"measure_id":"M12"},{"measure_id":"M5","district":"Сарыарка"}],"scenario_b":[{"measure_id":"M7","district":"Нура"},{"measure_id":"M8","district":"Есиль"},{"measure_id":"M10","district":"Нура"},{"measure_id":"M12"},{"measure_id":"M5","district":"Сарыарка"}]}
+{"scenario_a":[{"measure_id":"M1","district":"Нура"},{"measure_id":"M7","district":"Нура"},{"measure_id":"M10","district":"Нура"},{"measure_id":"M12"},{"measure_id":"M5","district":"Сарыарка"}],"scenario_b":[{"measure_id":"M1","district":"Есиль"},{"measure_id":"M7","district":"Нура"},{"measure_id":"M10","district":"Нура"},{"measure_id":"M12"},{"measure_id":"M5","district":"Сарыарка"}]}
