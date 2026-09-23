@@ -214,7 +214,15 @@ export default function Overview({
       setIsMapLoaded(true)
     })
 
+    const resizeObserver = new ResizeObserver(() => {
+      map.resize()
+    })
+    if (mapContainerRef.current) {
+      resizeObserver.observe(mapContainerRef.current)
+    }
+
     return () => {
+      resizeObserver.disconnect()
       map.remove()
       mapRef.current = null
     }
@@ -485,72 +493,64 @@ export default function Overview({
           </div>
 
           <div className="city-panel-body">
-            {/* Real OpenStreetMap Vector Tile Map via MapLibre GL */}
-            <div className="map-wrap">
-              <div className="gis-viewport">
-                {/* Floating Map Navigation Controls */}
-                <div className="gis-floating-controls no-print">
-                  <button className="gis-control-btn" onClick={handleZoomIn} title="Увеличить (Zoom In)">
-                    <ZoomIn size={16} />
-                  </button>
-                  <span className="gis-zoom-indicator">z{zoomLevel}</span>
-                  <button className="gis-control-btn" onClick={handleZoomOut} title="Уменьшить (Zoom Out)">
-                    <ZoomOut size={16} />
-                  </button>
-                  <button className="gis-control-btn" onClick={handleResetView} title="Центр Астаны">
-                    <RotateCcw size={15} />
-                  </button>
-                </div>
-
-                {/* MapLibre GL WebGL Map Container */}
-                <div ref={mapContainerRef} className="gis-map-canvas" />
-
-                {/* Map Status Badge */}
-                <div className="gis-map-badge-status">
-                  OSM АСТАНА · ВЕКТОРНЫЕ ТАЙЛЫ MBTILES · СЛОЙ: {activeLayer.toUpperCase()}
-                </div>
-              </div>
-
-              {/* Bottom Heatmap Gradient Key */}
-              <div className="map-key">
-                <div className="heat-legend">
-                  <span>Критический (&lt;45)</span>
-                  <div className="heat-bar" />
-                  <span>Высокий (&gt;65)</span>
-                </div>
-                <span className="key-active">
-                  <i className="green-dot" /> Выбран: <strong>{active}</strong> ({format(getDistrictLayerValue(active), 1)} б.)
-                </span>
-              </div>
-            </div>
-
-            {/* Quick District Selector List */}
-            <div className="district-tabs" aria-label="Районы">
-              <span className="small-label" style={{ marginBottom: 4 }}>
-                РАЙОНЫ АСТАНЫ
-              </span>
+            {/* 5 Astana Districts Quick Selection Strip */}
+            <div className="district-tabs-strip" aria-label="Районы Астаны">
               {context.districts.map(d => {
                 const score = getDistrictLayerValue(d.name)
                 const hasCrit = context.baseline.critical.some(c => c.district === d.name)
                 return (
                   <button
                     key={d.name}
-                    className={`district-tab ${active === d.name ? 'active' : ''}`}
+                    className={`district-pill ${active === d.name ? 'active' : ''}`}
                     onClick={() => centerOnDistrict(d.name)}
                     aria-pressed={active === d.name}
                   >
-                    <span>
-                      <MapPin size={15} />
-                      {d.name}
+                    <span className="pill-title">
+                      <MapPin size={14} />
+                      <strong>{d.name}</strong>
                       {hasCrit && <span className="crit-badge" title="Есть критический показатель">!</span>}
                     </span>
-                    <strong>{format(score, 1)}</strong>
+                    <span className="pill-score">{format(score, 1)} б.</span>
                   </button>
                 )
               })}
-              <p className="district-tip">
-                Используйте колёсико мыши, кнопки [ + ] / [ − ] или кликайте по полигонам районов на реальной карте Астаны.
-              </p>
+            </div>
+
+            {/* Real OpenStreetMap Vector Tile Map via MapLibre GL */}
+            <div className="gis-viewport">
+              {/* Floating Map Navigation Controls */}
+              <div className="gis-floating-controls no-print">
+                <button className="gis-control-btn" onClick={handleZoomIn} title="Увеличить (Zoom In)">
+                  <ZoomIn size={16} />
+                </button>
+                <span className="gis-zoom-indicator">z{zoomLevel}</span>
+                <button className="gis-control-btn" onClick={handleZoomOut} title="Уменьшить (Zoom Out)">
+                  <ZoomOut size={16} />
+                </button>
+                <button className="gis-control-btn" onClick={handleResetView} title="Центр Астаны">
+                  <RotateCcw size={15} />
+                </button>
+              </div>
+
+              {/* MapLibre GL WebGL Map Container */}
+              <div ref={mapContainerRef} className="gis-map-canvas" />
+
+              {/* Map Status Badge */}
+              <div className="gis-map-badge-status">
+                OSM АСТАНА · ВЕКТОРНЫЕ ТАЙЛЫ MBTILES · СЛОЙ: {activeLayer.toUpperCase()}
+              </div>
+            </div>
+
+            {/* Bottom Heatmap Gradient Key */}
+            <div className="map-key">
+              <div className="heat-legend">
+                <span>Критический (&lt;45)</span>
+                <div className="heat-bar" />
+                <span>Высокий (&gt;65)</span>
+              </div>
+              <span className="key-active">
+                <i className="green-dot" /> Выбран: <strong>{active}</strong> ({format(getDistrictLayerValue(active), 1)} б.)
+              </span>
             </div>
           </div>
         </div>

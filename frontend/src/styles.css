@@ -775,16 +775,67 @@
 .gis-top-toolbar { display: flex; align-items: center; gap: 10px; }
 .city-panel-body {
   display: flex;
-  align-items: flex-start;
-  gap: 18px;
+  flex-direction: column;
+  width: 100%;
+  gap: 12px;
 }
-.map-wrap {
-  flex: 1;
+.district-tabs-strip {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  width: 100%;
+}
+.district-pill {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 8px 12px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.15s ease;
   min-width: 0;
+}
+.district-pill:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+}
+.district-pill.active {
+  background: #ecfdf5;
+  border-color: #10b981;
+  color: #064e3b;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.18);
+}
+.district-pill .pill-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.district-pill .pill-score {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 5px;
+  background: #f1f5f9;
+  color: #475569;
+  white-space: nowrap;
+}
+.district-pill.active .pill-score {
+  background: #059669;
+  color: #ffffff;
 }
 .gis-viewport {
   position: relative;
-  width: 100%;
+  width: 100% !important;
   height: 520px;
   min-height: 480px;
   border-radius: 12px;
@@ -792,13 +843,11 @@
   border: 1px solid #cbd5e1;
   background: #f8fafc;
 }
-.district-tabs {
-  width: 200px;
-  flex-shrink: 0;
-}
 .gis-map-canvas {
-  width: 100%;
-  height: 100%;
+  position: absolute;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
   outline: none;
 }
 .gis-floating-controls {
