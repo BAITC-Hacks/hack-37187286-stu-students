@@ -1,0 +1,80 @@
+# Secrets / environment
+.env
+.env.*
+!.env.example
+
+# Python virtual environments
+.venv/
+venv/
+env/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Test / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# IDE
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Local agent instructions
+AGENTS.md
+agents.md
+
+# Local/generated data
+*.tmp
+*.cache
+
+# Optional model artifacts
+*.pkl
+*.joblib
+*.onnx
+*.pt
+*.pth
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# Frontend dependencies and browser test output
+node_modules/
+playwright-report/
+test-results/
+*.tsbuildinfo
+.artifacts/
+
+
+prompts/
+rules/
+
+
+.env
+.env.*
+!.env.example
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+AGENTS.md
+agents.md
